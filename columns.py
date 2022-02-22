@@ -179,7 +179,7 @@ class Table:
                 return str(x)
 
     @staticmethod
-    def read(file): #reads in file
+    def readfile(file): #reads in file
         lines = [] #create a list of lines
         with open(file) as f: #ensures that the file will be closed when control leaves the block
             curline = "" #current line is an empty string to start
@@ -220,17 +220,20 @@ class Table:
                 self.skip.append(index + 1) # index begins with 1
             if val[0].isupper() or "-" in val or "+" in val:
                 self.nums.append(index+1) # add to num
-                self.cols.append(Num(''.join(c for c in val if not c in ['?']), index+1)) # WTH IS THIS take all the items in val as long as it's not ? ;join()takes all items in an iterable and joins them as a string
+                self.cols.append(Num(''.join(c for c in val if not c in ['?',':']), index+1)) # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
             else:
                 self.syms.append(index+1)
-                self.cols.append(Sym(''.join(c for c in val if not c in ['?']), index+1))
+                self.cols.append(Sym(''.join(c for c in val if not c in ['?',":"]), index+1))
 
             if "!" in val or "-" in val or "+" in val: #for any goal, or klass add to y
                 self.y.append(index+1)
+                self.goals.append(index+1)
                 if "-" in val:
                     self.w[index+1] = -1
                 if "+" in val:
                     self.w[index+1] = 1
+                if "!" in val:
+                    self.klass.append(index+1)
             if "-" not in val and "+" not in val and "!" not in val: #catch the rest and add to x
                 self.x.append(index+1)
                 if val[0].isupper(): #check is num
@@ -251,15 +254,15 @@ class Table:
         realindex = 0
         index = 0
         for val in line:
-            if index+1 not in self.skip:
+            if index+1 not in self.skip: #check if it needs to be skipped
                 if val == "?" or val == "":
-                    realline.append(val)
+                    realline.append(val) #add to realline index
                     realindex += 1
                     continue
                 self.cols[realindex] + self.compiler(val)
                 realline.append(val)
                 realindex += 1
-            else:
+            else: #otherwise add it to the rows and increase the count
                 realindex += 1
             index += 1
         self.rows.append(line)
@@ -287,12 +290,16 @@ def test_sym():
     assert 0 == s.dist('a','a'), "same sym distance"
     assert 1 == s.dist('a','b'), "diff sym distance"
 
-# def test_rows():
-#   "count rows in a file."
+def test_rows():
+    lines = Table.readfile("test.csv")
+    table = Table(0)
+    ls = table.linemaker(lines)
+    for line in ls:
+        table + line
+    num_rows = len(lines)
+    #print("num_rows:", num_rows)
+    assert 101 == num_rows, "counting rows"
 
-
-# def test_dist():
-#  "distance between rows"
 
 # ------------------------------------------------------------------------------
 # Main
@@ -301,25 +308,27 @@ def test_sym():
 def main():
     test_num()
     test_sym()
-    # test_rows()
-    # test_dist()
+    test_rows()
     print("---------------------------")
-    print("All unit tests passed")
+    print("All 3 unit tests passed")
     print("---------------------------")
     ####### FULL TEST #########
-    lines = Table.read("test.csv")
+    lines = Table.readfile("test.csv")
     table = Table(0)
     ls = table.linemaker(lines)
     for line in ls:
         table + line
     print("---------------------------")
-    print("Test.csv Test")
+    print("Testing Code with small fake data: Test.csv ")
     print("Test Table Cols:", table.cols)
     print("Test Table Num Cols Vals:", table.cols[0].vals)
     print("Test Table Sym Cols Dictionary:", table.cols[1].count)
     print("Test Table Num Cols Mid:", table.cols[0].median)
     print("Test Table Sym Cols Mid:", table.cols[1].mode)
     print("Test Table Rows:", len(table.rows))
+    print("Test Table Skips:", len(table.skip))
+    print("Test Table Goals:", len(table.goals))
+    print("Test Table Klass:", len(table.klass))
     print("Test Table Header:", table.header)
     print("Test Table Nums:", len(table.nums))
     print("Test Table Syms:", len(table.syms))
