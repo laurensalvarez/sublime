@@ -217,7 +217,7 @@ class Table:
         for val in line:
             val = self.compiler(val) #compile the val datatype
             if val[0] == "?" or val[0] == ":": #check the first item is missing/: then skip it; add to skip list
-                self.skip.append(index + 1) # index begins with 1
+                self.skip.append(index) # index begins with 1
             if val[0].isupper() or "-" in val or "+" in val: #assuming goals will be numeric cols
                 self.nums.append(index) # add to num
                 self.cols.append(Num(''.join(c for c in val if not c in ['?',':']), index)) # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
@@ -237,7 +237,7 @@ class Table:
             if "-" not in val and "+" not in val and "!" not in val: #catch the rest and add to x
                 self.x.append(index)
                 if val[0].isupper(): #check is num
-                    self.xnums.append(index + 1)
+                    self.xnums.append(index)
                 else: #else add to sym
                     self.xsyms.append(index)
             index+=1 #increase by one
