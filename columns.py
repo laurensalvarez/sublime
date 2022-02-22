@@ -100,7 +100,7 @@ class Num(Col):
                 self.hi = v
             d = v - self.mu #distance to the mean
             self.mu += d / self.n # normalize it
-            self. m2 += d * (v - self.mu) # calculate momentumn of the series in realtionship to the distance
+            self.m2 += d * (v - self.mu) # calculate momentumn of the series in realtionship to the distance
             self.sd = self._numSd() #
             self.median = self.mid()
         except:
@@ -218,28 +218,28 @@ class Table:
             val = self.compiler(val) #compile the val datatype
             if val[0] == "?" or val[0] == ":": #check the first item is missing/: then skip it; add to skip list
                 self.skip.append(index + 1) # index begins with 1
-            if val[0].isupper() or "-" in val or "+" in val:
-                self.nums.append(index+1) # add to num
-                self.cols.append(Num(''.join(c for c in val if not c in ['?',':']), index+1)) # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
+            if val[0].isupper() or "-" in val or "+" in val: #assuming goals will be numeric cols
+                self.nums.append(index) # add to num
+                self.cols.append(Num(''.join(c for c in val if not c in ['?',':']), index)) # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
             else:
-                self.syms.append(index+1)
-                self.cols.append(Sym(''.join(c for c in val if not c in ['?',":"]), index+1))
+                self.syms.append(index)
+                self.cols.append(Sym(''.join(c for c in val if not c in ['?',":"]), index))
 
             if "!" in val or "-" in val or "+" in val: #for any goal, or klass add to y
-                self.y.append(index+1)
-                self.goals.append(index+1)
+                self.y.append(index)
+                self.goals.append(index)
                 if "-" in val:
-                    self.w[index+1] = -1
+                    self.w[index] = -1
                 if "+" in val:
-                    self.w[index+1] = 1
+                    self.w[index] = 1
                 if "!" in val:
-                    self.klass.append(index+1)
+                    self.klass.append(index)
             if "-" not in val and "+" not in val and "!" not in val: #catch the rest and add to x
-                self.x.append(index+1)
+                self.x.append(index)
                 if val[0].isupper(): #check is num
                     self.xnums.append(index + 1)
                 else: #else add to sym
-                    self.xsyms.append(index+1)
+                    self.xsyms.append(index)
             index+=1 #increase by one
             self.linesize = index
             self.fileline += 1
@@ -254,7 +254,7 @@ class Table:
         realindex = 0
         index = 0
         for val in line:
-            if index+1 not in self.skip: #check if it needs to be skipped
+            if index not in self.skip: #check if it needs to be skipped
                 if val == "?" or val == "":
                     realline.append(val) #add to realline index
                     realindex += 1
