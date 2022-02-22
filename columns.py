@@ -159,8 +159,8 @@ class Table:
         self.klass = []
         self.w = defaultdict(int)
         self.x = []
-        self.xnums = []
-        self.xsyms = []
+        self.xnums = [] #num x points (not including goals/klass)
+        self.xsyms = [] #sym x points
         self.header = ""
 
 # ------------------------------------------------------------------------------
@@ -216,7 +216,7 @@ class Table:
         index = 0
         for val in line:
             val = self.compiler(val) #compile the val datatype
-            if val[0] == "?" or val[0] == ":": #check the first item is missing/: then skip it; add to skip list
+            if val[0] == ":": #check the first item is : then skip it; add to skip list
                 self.skip.append(index) # index begins with 1
             if val[0].isupper() or "-" in val or "+" in val: #assuming goals will be numeric cols
                 self.nums.append(index) # add to num
@@ -234,12 +234,13 @@ class Table:
                     self.w[index] = 1
                 if "!" in val:
                     self.klass.append(index)
+
             if "-" not in val and "+" not in val and "!" not in val: #catch the rest and add to x
                 self.x.append(index)
                 if val[0].isupper(): #check is num
-                    self.xnums.append(index)
+                    self.xnums.append(index) #add the index of the col to the list
                 else: #else add to sym
-                    self.xsyms.append(index)
+                    self.xsyms.append(index) #add the index of the col to the list
             index+=1 #increase by one
             self.linesize = index
             self.fileline += 1
@@ -297,7 +298,7 @@ def test_rows():
     for line in ls:
         table + line
     num_rows = len(lines)
-    #print("num_rows:", num_rows)
+    #print("num_rows:", num_rows) #count includes the header
     assert 101 == num_rows, "counting rows"
 
 
@@ -333,7 +334,7 @@ def main():
     print("Test Table Nums:", len(table.nums))
     print("Test Table Syms:", len(table.syms))
     print("Test Table xNums:", table.xnums)
-    print("Test Table xSyms:", table.xsyms[0]) #why is this 2???
+    print("Test Table xSyms:", table.xsyms) #why is this 2???
     ##########################
     print("---------------------------")
     print("---------------------------")
