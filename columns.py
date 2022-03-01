@@ -10,6 +10,7 @@ from itertools import count
 # ------------------------------------------------------------------------------
 class Col:
     def __init__(self, name): #The __init__ method lets the class initialize the object's attributes and serves no other purpose
+        _id = 0 # underscore means hidden var
         self.name = name # self is an instance of the class with all of the attributes & methods
 
     def __add__(self,v):
@@ -24,6 +25,11 @@ class Col:
     def dist(self, x, y):
         return 0
 
+    @staticmethod
+    def id():
+        Col._id += 1
+        return Col._id
+
 # ------------------------------------------------------------------------------
 # Symbolic Column Class
 # ------------------------------------------------------------------------------
@@ -33,7 +39,7 @@ class Sym(Col):
         self.n = 0
         self.most = 0
         self.mode = ""
-        self.uid = uid #unique id --> it allows for permanence and recalling necessary subtables
+        self.uid = Col.id() #uid --> it allows for permanence and recalling necessary subtables
         self.count = defaultdict(int) #will never throw a key error bc it will guve default value as missing key
         if data != None: #initializes the empty col with val
             for val in data:
@@ -42,14 +48,14 @@ class Sym(Col):
     #def __str__(self):
         #print to a sym; overrides print(); could replace dump() TBD
 
+    def __add__(self, v): return self.add(v,1) #need to adds? i forgot why
 
-    def __add__(self, v):
-        self.n += 1 # add value to the count
-        self.count[v] += 1 # add value to the dictionary with count +1
+    def add (self, v, inc=1): #want to be able to control the increments
+        self.n += inc # add value to the count
+        self.count[v] += inc # add value to the dictionary with count +1
         tmp = self.count[v]
         if tmp > self.most: #check which is the most seen; if it's the most then assign and update mode
-            self.most = tmp
-            self.mode = v
+            self.most, self.mode = tmp, v # a,b = b,a
         return v
 
     def diversity(self): #entropy of all of n
@@ -66,13 +72,15 @@ class Sym(Col):
         return self.mode
 
     def dist(self, x, y): #Aha's distance between two syms
-        if (x == "?" or x == "") or (y == "?" or y == ""):
+        if (x == "?" or x == "") or (y == "?" or y == ""): #check if the empty is just a bug
             return 1
         return 0 if x == y else 1
 
 # ------------------------------------------------------------------------------
 # Numeric Column Class
 # ------------------------------------------------------------------------------
+#big = sys.maxsize
+#tiny = 1/big
 class Num(Col):
     def __init__(self, name, uid, data=None):
         Col.__init__(self, name)
@@ -80,8 +88,8 @@ class Num(Col):
         self.mu = 0 #
         self.m2 = 0 # for moving std dev
         self.sd = 0
-        self.lo = float('inf')
-        self.hi = -float('inf')
+        self.lo = sys.maxsize #float('inf')
+        self.hi = -1/sys.maxsize #-float('inf')
         self.vals = []
         self.uid = uid
         self.median = 0
@@ -122,7 +130,8 @@ class Num(Col):
         return self.sd
 
     def mid(self): #get midpoint for nums (median)
-        return statistics.median(self.vals)
+        # NO statistics.median(self.vals)
+        return self.mu #returns normalized mean/average??
 
 
     def dist(self, x, y): #Aha's distance bw two nums
@@ -269,6 +278,91 @@ class Table:
         self.rows.append(line)
         self.count += 1
 
+# ------------------------------------------------------------------------------
+# Clustering Fastmap;still in table class (change to it's own class???)
+# ------------------------------------------------------------------------------
+    def split(self):#Implements continous space Fastmap for bin chop on data
+        pivot = random.choice(self.rows) #pick a random row
+        #import pdb;pdb.set_trace()
+        east = self.mostDistant(pivot) #get most distant point from the pivot
+        west = self.mostDistant(east) #get most distant point from the eastTable
+        c = self.distance(east,west) #get distance between two points
+        items = [[row, 0] for row in self.rows] #
+
+        for x in items:
+            a = self.distance(x[0], west) # for each row get the distance between that and the farthest point west
+            b = self.distance(x[0], east) # for each row get the distance between that and the farthest point east
+            x[1] = (a ** 2 + c**2 - b**2)/(2*c) #cosine rule for the distance
+
+        items.sort(key = lambda x: x[1]) #sort by distance
+        splitpoint = len(items) // 2 #integral divison
+        eastItems = self.rows[: splitpoint] #east are the rows to the splitpoint
+        westItems = self.rows[splitpoint :] #west are the rows from the splitpoint onward
+
+        return [east, west, eastItems, westItems]
+
+    def distance(self,rowA, rowB): #distance between two points
+        distance = 0
+        if len(rowA) != len(rowB):
+            return -1/sys.maxsize
+        for i, (a,b) in enumerate(zip(rowA, rowB)):
+            d = self.cols[i].dist(self.compiler(a),self.compiler(b)) #compile the x & y bc it's in a text format
+            distance += d
+        return distance
+
+    def mostDistant(self, rowA):
+        #x_row = x_original_row
+        distance = -1/sys.maxsize
+        point = None
+
+        for row in self.rows:
+            d = self.distance(rowA, row)
+            if d > distance:
+                distance = d
+                point = row
+        return point
+
+    @staticmethod
+    def sneakClusters(items, table, enough):
+        if len(items) < enough: #stopping criteria #should be changable from command line
+            eastTable = Table(0) #make a table w/ uid = 0
+            eastTable + table.header
+            for item in items:
+                eastTable + item
+            return TreeNode(None, None, eastTable, None, None, None, True, table.header)
+
+        west, east, westItems, eastItems = table.split()
+
+        eastTable = Table(0)
+        eastTable + table.header
+        for item in eastItems:
+            eastTable + item
+
+        westTable = Table(0)
+        westTable + table.header
+        for item in westItems:
+            westTable + item
+
+        eastNode = Table.sneakClusters(eastItems, eastTable, enough)
+        westNode = Table.sneakClusters(westItems, westTable, enough)
+        root = TreeNode(east, west, eastTable, westTable, eastNode, westNode, False, table.header)
+        return root
+
+# ------------------------------------------------------------------------------
+# Tree class for clustering
+# ------------------------------------------------------------------------------
+class TreeNode:
+    _ids = count(0)
+    def __init__(self, east, west, eastTable, westTable, eastNode, westNode, leaf, header):
+        self.uid = next(self._ids)
+        self.east = east
+        self.west = west
+        self.eastTable = eastTable
+        self.westTable = westTable
+        self.leaf = leaf
+        self.header = header
+        self.eastNode = eastNode
+        self.westNode = westNode
 
 # ------------------------------------------------------------------------------
 # Tests
