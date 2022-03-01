@@ -287,14 +287,14 @@ class Table:
         east = self.mostDistant(pivot) #get most distant point from the pivot
         west = self.mostDistant(east) #get most distant point from the eastTable
         c = self.distance(east,west) #get distance between two points
-        items = [[row, 0] for row in self.rows] #
+        items = [[row, 0] for row in self.rows] #make an array for the row & distance but initialize to 0 to start
 
         for x in items:
             a = self.distance(x[0], west) # for each row get the distance between that and the farthest point west
             b = self.distance(x[0], east) # for each row get the distance between that and the farthest point east
-            x[1] = (a ** 2 + c**2 - b**2)/(2*c) #cosine rule for the distance
+            x[1] = (a ** 2 + c**2 - b**2)/(2*c) #cosine rule for the distance assign to dist in (row, dist)
 
-        items.sort(key = lambda x: x[1]) #sort by distance
+        items.sort(key = lambda x: x[1]) #sort by distance (method sorts the list ascending by default; can have sorting criteria)
         splitpoint = len(items) // 2 #integral divison
         eastItems = self.rows[: splitpoint] #east are the rows to the splitpoint
         westItems = self.rows[splitpoint :] #west are the rows from the splitpoint onward
@@ -303,24 +303,24 @@ class Table:
 
     def distance(self,rowA, rowB): #distance between two points
         distance = 0
-        if len(rowA) != len(rowB):
+        if len(rowA) != len(rowB): #catch if they can't be compared?? why??
             return -1/sys.maxsize
-        for i, (a,b) in enumerate(zip(rowA, rowB)):
-            d = self.cols[i].dist(self.compiler(a),self.compiler(b)) #compile the x & y bc it's in a text format
-            distance += d
+        for i, (a,b) in enumerate(zip(rowA, rowB)): #to iterate through an interable: an get the index with enumerate(), and get the elements of multiple iterables with zip()
+            d = self.cols[i].dist(self.compiler(a),self.compiler(b)) #distance of both rows in each of the columns; compile the a & b bc it's in a text format
+            distance += d #add the distances together
         return distance
 
-    def mostDistant(self, rowA):
+    def mostDistant(self, rowA): #find the furthest point from row A
         #x_row = x_original_row
         distance = -1/sys.maxsize
-        point = None
+        farthestRow = None # assign to null; python uses None datatype
 
         for row in self.rows:
-            d = self.distance(rowA, row)
-            if d > distance:
-                distance = d
-                point = row
-        return point
+            d = self.distance(rowA, row) #for each of the rows find the distance to row A
+            if d > distance: #if it's bigger than the distance
+                distance = d #assign the new distance to be d
+                point = row #make point the far row
+        return farthestRow #return the far point/row
 
     @staticmethod
     def sneakClusters(items, table, enough):
