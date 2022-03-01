@@ -324,14 +324,14 @@ class Table:
 
     @staticmethod
     def sneakClusters(items, table, enough):
-        if len(items) < enough: #stopping criteria #should be changable from command line
+        if len(items) < enough: # if/while the length of the less than the stopping criteria #should be changable from command line
             eastTable = Table(0) #make a table w/ uid = 0
-            eastTable + table.header
-            for item in items:
+            eastTable + table.header # able the table header to the table ; eastTable.header = table.header?
+            for item in items: #add all the items to the table
                 eastTable + item
-            return TreeNode(None, None, eastTable, None, None, None, True, table.header)
-
-        west, east, westItems, eastItems = table.split()
+            return TreeNode(None, None, eastTable, None, None, None, True, table.header) #make a treenode for east table
+        #after you get enough items
+        west, east, westItems, eastItems = table.split() #fastmap bin split on the table
 
         eastTable = Table(0)
         eastTable + table.header
@@ -346,7 +346,7 @@ class Table:
         eastNode = Table.sneakClusters(eastItems, eastTable, enough)
         westNode = Table.sneakClusters(westItems, westTable, enough)
         root = TreeNode(east, west, eastTable, westTable, eastNode, westNode, False, table.header)
-        return root
+        return root #why do you return the root?
 
 # ------------------------------------------------------------------------------
 # Tree class for clustering
