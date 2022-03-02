@@ -3,6 +3,7 @@ import math
 import re
 import random
 import statistics
+import sys
 from itertools import count
 
 # ------------------------------------------------------------------------------
@@ -10,7 +11,7 @@ from itertools import count
 # ------------------------------------------------------------------------------
 class Col:
     def __init__(self, name): #The __init__ method lets the class initialize the object's attributes and serves no other purpose
-        _id = 0 # underscore means hidden var
+        self._id = 0 # underscore means hidden var
         self.name = name # self is an instance of the class with all of the attributes & methods
 
     def __add__(self,v):
@@ -26,9 +27,9 @@ class Col:
         return 0
 
     @staticmethod
-    def id():
-        Col._id += 1
-        return Col._id
+    def id(self):
+        self._id += 1
+        return self._id
 
 # ------------------------------------------------------------------------------
 # Symbolic Column Class
@@ -39,7 +40,7 @@ class Sym(Col):
         self.n = 0
         self.most = 0
         self.mode = ""
-        self.uid = Col.id() #uid --> it allows for permanence and recalling necessary subtables
+        self.uid = Col.id(self) #uid --> it allows for permanence and recalling necessary subtables
         self.count = defaultdict(int) #will never throw a key error bc it will guve default value as missing key
         if data != None: #initializes the empty col with val
             for val in data:
@@ -131,7 +132,16 @@ class Num(Col):
 
     def mid(self): #get midpoint for nums (median)
         # NO statistics.median(self.vals)
-        return self.mu #returns normalized mean/average??
+        self.vals.sort()
+        listLen = len(self.vals)
+        m = listLen//2
+        if listLen% 2 == 0:
+            m = (self.vals[m-1]+self.vals[m])/2
+            return self.median
+        else:
+            self.median = self.vals[m]
+            return self.median
+         #returns median
 
 
     def dist(self, x, y): #Aha's distance bw two nums
@@ -278,6 +288,63 @@ class Table:
         self.rows.append(line)
         self.count += 1
 
+    def dump(self, f):
+        f.write("Dump table:"+"\n")
+        f.write("table.cols stats info"+"\n")
+        for i, col in enumerate(self.cols):
+            if i in self.skip:
+                continue
+            if i in self.nums:
+                f.write("|  " + "we're looking at col #" +str(col.uid)+"\n")
+                f.write("|  |  col:  "+str(col.uid)+"\n")
+                f.write("|  |  hi:   "+str(col.hi)+"\n")
+                f.write("|  |  lo:   "+str(col.lo)+"\n")
+                f.write("|  |  m2:   "+str(col.m2)+"\n")
+                f.write("|  |  mu:   "+str(col.mu)+"\n")
+                f.write("|  |  n:    "+str(col.n)+"\n")
+                f.write("|  |  sd:   "+str(col.sd)+"\n")
+                f.write("|  |  name: "+str(col.name)+"\n")
+            else:
+                f.write("|  " + str(col.uid) + "\n")
+                # for k, v in col.cnt.items():
+                #     f.write("|  |  |  " + str(k) + ": " + str(v) + "\n")
+                f.write("|  |  col:  "+str(col.uid)+"\n")
+                f.write("|  |  mode: "+str(col.mode)+"\n")
+                f.write("|  |  most: "+str(col.most)+"\n")
+                f.write("|  |  n:    " + str(col.n) + "\n")
+                f.write("|  |  name: " + str(col.name) + "\n")
+
+        f.write("table x & y info: "+"\n")
+        f.write("|  len(cols): " + str(len(self.cols))+"\n")
+        f.write("|  y" + "\n")
+        for v in self.y:
+            if v not in self.skip:
+                f.write("|  |  " + str(v) + "\n")
+        f.write("|  nums" + "\n")
+        for v in self.nums:
+            if v not in self.skip:
+                f.write("|  |  " + str(v) + "\n")
+        f.write("|  syms" + "\n")
+        for v in self.syms:
+            if v not in self.skip:
+                f.write("|  |  " + str(v) + "\n")
+        f.write("|  w" + "\n")
+        for k, v in self.w.items():
+            if v not in self.skip:
+                f.write("|  |  " + str(k) + ": "+str(v)+"\n")
+        f.write("|  x" + "\n")
+        for v in self.x:
+            if v not in self.skip:
+                f.write("|  |  " + str(v) + "\n")
+        f.write("|  xnums" + "\n")
+        for v in self.xnums:
+            if v not in self.skip:
+                f.write("|  |  " + str(v) + "\n")
+        f.write("|  xsyms" + "\n")
+        for v in self.xsyms:
+            if v not in self.skip:
+                f.write("|  |  " + str(v) + "\n")
+
 # ------------------------------------------------------------------------------
 # Clustering Fastmap;still in table class (change to it's own class???)
 # ------------------------------------------------------------------------------
@@ -292,7 +359,7 @@ class Table:
         for x in items:
             a = self.distance(x[0], west) # for each row get the distance between that and the farthest point west
             b = self.distance(x[0], east) # for each row get the distance between that and the farthest point east
-            x[1] = (a ** 2 + c**2 - b**2)/(2*c) #cosine rule for the distance assign to dist in (row, dist)
+            x[1] = (a ** 2 + c**2 - b**2)/(2*c + 10e-32) #cosine rule for the distance assign to dist in (row, dist)
 
         items.sort(key = lambda x: x[1]) #sort by distance (method sorts the list ascending by default; can have sorting criteria)
         splitpoint = len(items) // 2 #integral divison
@@ -301,7 +368,8 @@ class Table:
 
         return [east, west, eastItems, westItems]
 
-    def distance(self,rowA, rowB): #distance between two points
+    def distance(self,og_rowA, rowB): #distance between two points
+        rowA = og_rowA
         distance = 0
         if len(rowA) != len(rowB): #catch if they can't be compared?? why??
             return -1/sys.maxsize
@@ -310,8 +378,8 @@ class Table:
             distance += d #add the distances together
         return distance
 
-    def mostDistant(self, rowA): #find the furthest point from row A
-        #x_row = x_original_row
+    def mostDistant(self, og_rowA): #find the furthest point from row A
+        rowA = og_rowA
         distance = -1/sys.maxsize
         farthestRow = None # assign to null; python uses None datatype
 
@@ -319,7 +387,7 @@ class Table:
             d = self.distance(rowA, row) #for each of the rows find the distance to row A
             if d > distance: #if it's bigger than the distance
                 distance = d #assign the new distance to be d
-                point = row #make point the far row
+                farthestRow = row #make point the far row
         return farthestRow #return the far point/row
 
     @staticmethod
@@ -348,6 +416,47 @@ class Table:
         root = TreeNode(east, west, eastTable, westTable, eastNode, westNode, False, table.header)
         return root #why do you return the root?
 
+
+    def csvDump(self, f):
+        for i, col in enumerate(self.cols):
+            if i in self.skip:
+                continue
+            if i in self.nums:
+                f.write(str(col.uid) + ",")
+                f.write(str(col.hi)+",")
+                f.write(str(col.lo)+",")
+                f.write(str(col.m2)+",")
+                f.write(str(col.mu)+",")
+                f.write(str(col.n)+",")
+                f.write(str(col.sd)+",")
+            else:
+                f.write(str(col.uid)+",")
+                f.write(str(col.mode)+",")
+                f.write(str(col.most)+",")
+                f.write(str(col.n) + ",")
+        f.write("\n")
+
+    def csvHeader(self):
+        header = ""
+        for i, col in enumerate(self.cols):
+            if i in self.skip:
+                continue
+            if i in self.nums:
+                header += (str(col.name)+"_uid,")
+                header += (str(col.name)+"_hi,")
+                header += (str(col.name)+"_lo,")
+                header += (str(col.name)+"_m2,")
+                header += (str(col.name)+"_mu,")
+                header += (str(col.name)+"_n,")
+                header += (str(col.name)+"_sd,")
+            else:
+                header += (str(col.name)+"_uid,")
+                header += (str(col.name)+"_mode,")
+                header += (str(col.name)+"_most,")
+                header += (str(col.name)+"_n,")
+        header += "\n"
+        return header
+
 # ------------------------------------------------------------------------------
 # Tree class for clustering
 # ------------------------------------------------------------------------------
@@ -363,6 +472,46 @@ class TreeNode:
         self.header = header
         self.eastNode = eastNode
         self.westNode = westNode
+
+    def dump(self, f):
+        #DFS
+        if self.leaf:
+            f.write("Dump Leaf Node: " + str(self.uid) + "\n")
+            f.write("Dump Leaf Table: " + "\n")
+            self.eastTable.dump(f)
+            return
+        # f.write("Dump Node: " + str(self.uid) + "\n")
+        # if self.eastTable is not None:
+        #     f.write("Dump East Table: " + "\n")
+        #     self.eastTable.dump(f)
+        # else:
+        #     f.write("No east table" + "\n")
+        # if self.westTable is not None:
+        #     f.write("Dump West Table: " + "\n")
+        #     self.westTable.dump(f)
+        # else:
+        #     f.write("No west table" + "\n")
+        if self.eastNode is not None:
+        #     f.write("Dump East Node Recursive: " + "\n")
+            self.eastNode.dump(f)
+        # else:
+        #     f.write("No east node" + "\n")
+        if self.westNode is not None:
+        #     f.write("Dump West Node Recursive: " + "\n")
+            self.westNode.dump(f)
+        # else:
+        #     f.write("No west node" + "\n")
+
+    def csvDump(self, f):
+        #DFS
+        if self.leaf:
+            self.eastTable.csvDump(f)
+            return
+
+        if self.eastNode is not None:
+            self.eastNode.csvDump(f)
+        if self.westNode is not None:
+            self.westNode.csvDump(f)
 
 # ------------------------------------------------------------------------------
 # Tests
@@ -401,38 +550,65 @@ def test_rows():
 # ------------------------------------------------------------------------------
 
 def main():
-    test_num()
-    test_sym()
-    test_rows()
+    # test_num()
+    # test_sym()
+    # test_rows()
+    # print("---------------------------")
+    # print("All 3 unit tests passed")
+    # print("---------------------------")
+    # print("---------------------------")
+    # print("Small test case completed: can sort a dataset")
+    # print("---------------------------")
+    # ####### FULL TEST #########
+    # lines = Table.readfile("test.csv")
+    # table = Table(0)
+    # ls = table.linemaker(lines)
+    # for line in ls:
+    #     table + line
+    # print("---------------------------")
+    # print("Testing Code with small fake data: test.csv ")
+    # print("Test Table Cols:", table.cols)
+    # print("Test Table Num Cols Vals:", table.cols[0].vals)
+    # print("Test Table Sym Cols Dictionary:", table.cols[1].count)
+    # print("Test Table Num Cols Mid:", table.cols[0].median)
+    # print("Test Table Sym Cols Mid:", table.cols[1].mode)
+    # print("Test Table Rows:", len(table.rows))
+    # print("Test Table Skips:", len(table.skip))
+    # print("Test Table Goals:", len(table.goals))
+    # print("Test Table Klass:", len(table.klass))
+    # print("Test Table Header:", table.header)
+    # print("Test Table Nums:", len(table.nums))
+    # print("Test Table Syms:", len(table.syms))
+    # print("Test Table xNums:", table.xnums)
+    # print("Test Table xSyms:", table.xsyms) #why is this 2???
+    # ##########################
+    # print("---------------------------")
+    # print("---------------------------")
+    # print("FIRST test completed")
+    # print("---------------------------")
+
     print("---------------------------")
-    print("All 3 unit tests passed")
+    print("Full Test Case: can cluster")
     print("---------------------------")
-    ####### FULL TEST #########
-    lines = Table.readfile("test.csv")
-    table = Table(0)
+
+    lines = Table.readfile("auto93.csv")
+    table = Table(1)
     ls = table.linemaker(lines)
     for line in ls:
         table + line
+    root = Table.sneakClusters(table.rows, table, int(math.sqrt(len(table.rows))))
+
+    with open("auto93_clusters.csv", "w") as f:
+        csvheader = table.csvHeader()
+        f.write(csvheader)
+        root.csvDump(f)
+
+    with open("auto93_clusters_desc.csv", "w") as f:
+        csvheader = table.csvHeader()
+        f.write(csvheader)
+        root.dump(f)
     print("---------------------------")
-    print("Testing Code with small fake data: Test.csv ")
-    print("Test Table Cols:", table.cols)
-    print("Test Table Num Cols Vals:", table.cols[0].vals)
-    print("Test Table Sym Cols Dictionary:", table.cols[1].count)
-    print("Test Table Num Cols Mid:", table.cols[0].median)
-    print("Test Table Sym Cols Mid:", table.cols[1].mode)
-    print("Test Table Rows:", len(table.rows))
-    print("Test Table Skips:", len(table.skip))
-    print("Test Table Goals:", len(table.goals))
-    print("Test Table Klass:", len(table.klass))
-    print("Test Table Header:", table.header)
-    print("Test Table Nums:", len(table.nums))
-    print("Test Table Syms:", len(table.syms))
-    print("Test Table xNums:", table.xnums)
-    print("Test Table xSyms:", table.xsyms) #why is this 2???
-    ##########################
-    print("---------------------------")
-    print("---------------------------")
-    print("Final run completed")
+    print("SECOND Test completed")
     print("---------------------------")
 
 
