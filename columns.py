@@ -345,31 +345,53 @@ class Table:
             if v not in self.skip:
                 f.write("|  |  " + str(v) + "\n")
 
+    def ydump(self, f):
+        f.write("how many table cols: " + str(len(self.cols))+"\n")
+        f.write("leaf table's y col info: "+"\n")
+        for v in self.y:
+            if v not in self.skip:
+                f.write("y index: " + str(v) + "\n")
+        for i, col in enumerate(self.cols):
+            if i in self.y:
+                if i in self.skip:
+                    continue
+                if i in self.nums:
+                    f.write("|  " + "we're looking at NUM col id #" +str(col.uid)+"\n")
+                    f.write("|  " + "we're looking at y index" +str(i)+"\n")
+                    f.write("|  |  col:  "+str(col.vals)+"\n")
+                else:
+                    f.write("| SYM col id # " + str(col.uid) + "\n")
+                    for k, v in col.count.items():
+                        f.write("|  |  SYM Key : Value --> " + str(k) + ": " + str(v) + "\n")
+
+
 # ------------------------------------------------------------------------------
 # Clustering Fastmap;still in table class (change to it's own class???)
 # ------------------------------------------------------------------------------
-    def split(self):#Implements continous space Fastmap for bin chop on data
-        pivot = random.choice(self.rows) #pick a random row
-        #import pdb;pdb.set_trace()
-        east = self.mostDistant(pivot) #get most distant point from the pivot
-        west = self.mostDistant(east) #get most distant point from the eastTable
-        c = self.distance(east,west) #get distance between two points
+    def split(self, left = None, right = None):#Implements continous space Fastmap for bin chop on data
+    #instead of keeping top cluster, kept the top's left and right points then ask top cluster's left & right what's the most distant point in the local cluster
+        # top = top or self
+        if left == None and right == None:
+            pivot = random.choice(self.rows) #pick a random row
+            #import pdb;pdb.set_trace()
+            left = self.mostDistant(pivot) #get most distant point from the pivot
+            right = self.mostDistant(left) #get most distant point from the leftTable
+        c = self.distance(left,right) #get distance between two points
         items = [[row, 0] for row in self.rows] #make an array for the row & distance but initialize to 0 to start
 
         for x in items:
-            a = self.distance(x[0], west) # for each row get the distance between that and the farthest point west
-            b = self.distance(x[0], east) # for each row get the distance between that and the farthest point east
+            a = self.distance(x[0], right) # for each row get the distance between that and the farthest point right
+            b = self.distance(x[0], left) # for each row get the distance between that and the farthest point left
             x[1] = (a ** 2 + c**2 - b**2)/(2*c + 10e-32) #cosine rule for the distance assign to dist in (row, dist)
 
         items.sort(key = lambda x: x[1]) #sort by distance (method sorts the list ascending by default; can have sorting criteria)
         splitpoint = len(items) // 2 #integral divison
-        eastItems = self.rows[: splitpoint] #east are the rows to the splitpoint
-        westItems = self.rows[splitpoint :] #west are the rows from the splitpoint onward
+        leftItems = self.rows[: splitpoint] #left are the rows to the splitpoint
+        rightItems = self.rows[splitpoint :] #right are the rows from the splitpoint onward
 
-        return [east, west, eastItems, westItems]
+        return [left, right, leftItems, rightItems]
 
-    def distance(self,og_rowA, rowB): #distance between two points
-        rowA = og_rowA
+    def distance(self,rowA, rowB): #distance between two points
         distance = 0
         if len(rowA) != len(rowB): #catch if they can't be compared?? why??
             return -1/sys.maxsize
@@ -378,8 +400,7 @@ class Table:
             distance += d #add the distances together
         return distance
 
-    def mostDistant(self, og_rowA): #find the furthest point from row A
-        rowA = og_rowA
+    def mostDistant(self, rowA): #find the furthest point from row A
         distance = -1/sys.maxsize
         farthestRow = None # assign to null; python uses None datatype
 
@@ -390,30 +411,45 @@ class Table:
                 farthestRow = row #make point the far row
         return farthestRow #return the far point/row
 
+    def closestPoint(self,rowA):
+        distance = sys.maxsize
+        closestRow = None # assign to null; python uses None datatype
+        secondClosest = None
+
+        for row in self.rows:
+            d = self.distance(rowA, row) #for each of the rows find the distance to row A
+            if d < distance: #if it's smaller than the distance
+                distance = d #assign the new distance to be d
+                closestRow = row #make point the close row
+        return closestRow #return the close point/row
+
     @staticmethod
-    def sneakClusters(items, table, enough):
+    def sneakClusters(items, table, enough, left = None, right= None):
         if len(items) < enough: # if/while the length of the less than the stopping criteria #should be changable from command line
-            eastTable = Table(0) #make a table w/ uid = 0
-            eastTable + table.header # able the table header to the table ; eastTable.header = table.header?
+            leftTable = Table(0) #make a table w/ uid = 0
+            leftTable + table.header # able the table header to the table ; leftTable.header = table.header?
             for item in items: #add all the items to the table
-                eastTable + item
-            return TreeNode(None, None, eastTable, None, None, None, True, table.header) #make a treenode for east table
+                leftTable + item
+            return TreeNode(None, None, leftTable, None, None, None, True, table.header) #make a leaf treenode when the cluster have enough rows in them
         #after you get enough items
-        west, east, westItems, eastItems = table.split() #fastmap bin split on the table
+        if left != None and right != None:
+            _, _, leftItems, rightItems = table.split(left, right) #fastmap bin split on the table
+        else:
+            left, right, leftItems , rightItems  = table.split(left, right)
 
-        eastTable = Table(0)
-        eastTable + table.header
-        for item in eastItems:
-            eastTable + item
+        leftTable = Table(0)
+        leftTable + table.header
+        for item in leftItems:
+            leftTable + item
 
-        westTable = Table(0)
-        westTable + table.header
-        for item in westItems:
-            westTable + item
+        rightTable = Table(0)
+        rightTable + table.header
+        for item in rightItems:
+            rightTable + item
 
-        eastNode = Table.sneakClusters(eastItems, eastTable, enough)
-        westNode = Table.sneakClusters(westItems, westTable, enough)
-        root = TreeNode(east, west, eastTable, westTable, eastNode, westNode, False, table.header)
+        leftNode = Table.sneakClusters(leftItems, leftTable, enough, left, right)
+        rightNode = Table.sneakClusters(rightItems, rightTable, enough, left, right)
+        root = TreeNode(left, right, leftTable, rightTable, leftNode, rightNode, False, table.header)
         return root #why do you return the root?
 
 
@@ -462,56 +498,85 @@ class Table:
 # ------------------------------------------------------------------------------
 class TreeNode:
     _ids = count(0)
-    def __init__(self, east, west, eastTable, westTable, eastNode, westNode, leaf, header):
+    def __init__(self, left, right, leftTable, rightTable, leftNode, rightNode, leaf, header):
         self.uid = next(self._ids)
-        self.east = east
-        self.west = west
-        self.eastTable = eastTable
-        self.westTable = westTable
+        self.left = left
+        self.right = right
+        self.leftTable = leftTable
+        self.rightTable = rightTable
         self.leaf = leaf
         self.header = header
-        self.eastNode = eastNode
-        self.westNode = westNode
+        self.leftNode = leftNode
+        self.rightNode = rightNode
+
+    # def deepestNodes(self): #find the childless nodes aka the deepest level
+    #     for
+
+
+    def breadth_first_search(self, f):
+     # """In BFS the Node Values at each level of the Tree are traversed before going to next level"""
+        count = 0
+        to_visit = []
+        to_visit.append(self)
+
+        while len(to_visit) != 0:
+            current = to_visit.pop(0)
+            # print("current node:" , str(current.uid))
+            if current.leaf:
+                count +=1
+                # print("leaf # " , str(count))
+                f.write("--------------------------------------------------" + "\n")
+                f.write("Dump Leaf Node/Table: " + str(current.uid) + "\n")
+                current.leftTable.ydump(f)
+
+            if current.leftNode is not None:
+                to_visit.append(current.leftNode)
+
+            if current.rightNode is not None:
+                to_visit.append(current.rightNode)
 
     def dump(self, f):
         #DFS
         if self.leaf:
             f.write("Dump Leaf Node: " + str(self.uid) + "\n")
             f.write("Dump Leaf Table: " + "\n")
-            self.eastTable.dump(f)
+            self.leftTable.dump(f)
             return
         # f.write("Dump Node: " + str(self.uid) + "\n")
-        # if self.eastTable is not None:
-        #     f.write("Dump East Table: " + "\n")
-        #     self.eastTable.dump(f)
+        # if self.leftTable is not None:
+        #     f.write("Dump left Table: " + "\n")
+        #     self.leftTable.dump(f)
         # else:
-        #     f.write("No east table" + "\n")
-        # if self.westTable is not None:
-        #     f.write("Dump West Table: " + "\n")
-        #     self.westTable.dump(f)
+        #     f.write("No left table" + "\n")
+        # if self.rightTable is not None:
+        #     f.write("Dump right Table: " + "\n")
+        #     self.rightTable.dump(f)
         # else:
-        #     f.write("No west table" + "\n")
-        if self.eastNode is not None:
-        #     f.write("Dump East Node Recursive: " + "\n")
-            self.eastNode.dump(f)
+        #     f.write("No right table" + "\n")
+        if self.leftNode is not None:
+        #     f.write("Dump left Node Recursive: " + "\n")
+            self.leftNode.dump(f)
         # else:
-        #     f.write("No east node" + "\n")
-        if self.westNode is not None:
-        #     f.write("Dump West Node Recursive: " + "\n")
-            self.westNode.dump(f)
+        #     f.write("No left node" + "\n")
+        if self.rightNode is not None:
+        #     f.write("Dump right Node Recursive: " + "\n")
+            self.rightNode.dump(f)
         # else:
-        #     f.write("No west node" + "\n")
+        #     f.write("No right node" + "\n")
 
     def csvDump(self, f):
         #DFS
         if self.leaf:
-            self.eastTable.csvDump(f)
+            self.leftTable.csvDump(f)
             return
 
-        if self.eastNode is not None:
-            self.eastNode.csvDump(f)
-        if self.westNode is not None:
-            self.westNode.csvDump(f)
+        if self.leftNode is not None:
+            self.leftNode.csvDump(f)
+
+        if self.rightNode is not None:
+            self.rightNode.csvDump(f)
+
+
 
 # ------------------------------------------------------------------------------
 # Tests
@@ -588,27 +653,41 @@ def main():
     # print("---------------------------")
 
     print("---------------------------")
-    print("Full Test Case: can cluster")
+    print("Full Test Case:")
     print("---------------------------")
 
-    lines = Table.readfile("auto93.csv")
+    lines = Table.readfile("diabetes.csv")
     table = Table(1)
     ls = table.linemaker(lines)
     for line in ls:
         table + line
+    print("Printing Raw y-vals ...")
+    with open("raw_y.csv", "w") as f:
+        table.ydump(f)
+
+
     root = Table.sneakClusters(table.rows, table, int(math.sqrt(len(table.rows))))
 
-    with open("auto93_clusters.csv", "w") as f:
-        csvheader = table.csvHeader()
-        f.write(csvheader)
-        root.csvDump(f)
+    # with open("diabetes_clusters.csv", "w") as f:
+    #     csvheader = table.csvHeader()
+    #     f.write(csvheader)
+    #     root.csvDump(f)
+    #
+    # with open("diabetes_clusters_desc.csv", "w") as f:
+    #     csvheader = table.csvHeader()
+    #     f.write(csvheader)
+    #     root.dump(f)
 
-    with open("auto93_clusters_desc.csv", "w") as f:
-        csvheader = table.csvHeader()
-        f.write(csvheader)
-        root.dump(f)
     print("---------------------------")
-    print("SECOND Test completed")
+    print("Clutering Completed")
+    print("---------------------------")
+    with open("BFS.csv", "w") as f:
+        # csvheader = table.csvHeader()
+        # f.write(csvheader)
+        root.breadth_first_search(f)
+
+    print("---------------------------")
+    print("BFS completed")
     print("---------------------------")
 
 
