@@ -196,31 +196,41 @@ class Table:
                 return float(x)
             except ValueError:
                 return str(x)
-
+    # @staticmethod
+    # def readfile(file):
+    #     lines = []
+    #     with open(file) as f:
+    #         curline = ""
+    #         for line in f:
+    #             line = line.strip()
+    #             if line[len(line) -1] ==",":
+    #                 curline += line
+    #             else:
+    #                 curline += line
+    #                 lines.append([Table.compiler(x) for x in curline])
+    #                 curline = ""
+    #     print("RETURN LINES:", lines)
+    #     return lines
     @staticmethod
     def readfile(file): #reads in file
-        lines = [] #create a list of lines
+        lines = []
         with open(file) as f: #ensures that the file will be closed when control leaves the block
-            curline = "" #current line is an empty string to start
-            for line in f:
+            for line in f: #for all the lines in the file 1 by1
                 line = line.strip() #get rid of all the white space
-                if line[len(line) -1] ==",": #if you reach a comma go to the next line
-                    curline += line #add line to current
-                else:
-                    curline += line #add line to current
-                    lines.append(curline) #add currentline to list
-                    curline = "" #assign curline back to empty
-        return lines #return a list of lines
+                lines.append(Table.compiler(line)) # add all the lines compiled
+        # print("RETURN LINES:", lines)
+        return lines #return a list of strings
 
     @staticmethod
-    def linemaker(src, sep=",", doomed=r'([\n\t\r ]|#.*)'): #creates readable lines
+    def linemaker(src, sep=",", doomed=r'([\n\t\r ]|#.*)'):
         lines = [] #create a list of lines
         for line in src:
             line = line.strip() #removes any spaces or specified characters at the start and end of a string
             line = re.sub(doomed, '', line) # uses regular exp package to replace substrings in strings
             if line:
-                lines.append(line.split(sep)) #put the good string back together
-        return lines #returns all the pretty readable lines
+                lines.append([Table.compiler(x) for x in line.split(sep)]) #for every entry in the list of line elements add the complied
+        return lines  #returns all the pretty readable lines
+
 # ------------------------------------------------------------------------------
 # Table Class: Class Methods
 # ------------------------------------------------------------------------------
@@ -274,8 +284,11 @@ class Table:
         realindex = 0
         index = 0
         for val in line:
+            # print("LINE:" , line)
+            # print("VAL in line:" , val)
             if index not in self.skip: #check if it needs to be skipped
                 if val == "?" or val == "":
+                    #val = self.compiler(val) #compile the val datatype
                     realline.append(val) #add to realline index
                     realindex += 1
                     continue
@@ -285,6 +298,7 @@ class Table:
             else: #otherwise add it to the rows and increase the count
                 realindex += 1
             index += 1
+        # print("ADDING ROW:" , line)
         self.rows.append(line)
         self.count += 1
 
@@ -358,11 +372,86 @@ class Table:
                 if i in self.nums:
                     f.write("|  " + "we're looking at NUM col id #" +str(col.uid)+"\n")
                     f.write("|  " + "we're looking at y index" +str(i)+"\n")
+                    f.write("|  |  n:    "+str(col.n)+"\n")
+                    f.write("|  |  median:    "+str(col.median)+"\n")
                     f.write("|  |  col:  "+str(col.vals)+"\n")
+                    f.write("|  |  name: "+str(col.name)+"\n")
                 else:
                     f.write("| SYM col id # " + str(col.uid) + "\n")
+                    f.write("|  |  mode: "+str(col.mode)+"\n")
+                    f.write("|  |  most: "+str(col.most)+"\n")
                     for k, v in col.count.items():
                         f.write("|  |  SYM Key : Value --> " + str(k) + ": " + str(v) + "\n")
+    def xdump(self, f):
+        f.write("how many table cols: " + str(len(self.cols))+"\n")
+        f.write("leaf table's x col info: "+"\n")
+        f.write("x indexes: " + str(len(self.x)) + "\n")
+        for v in self.rows:
+            if v not in self.skip:
+                f.write("row class: " + str(v[len(v)-1]) + "\n")
+        for i, col in enumerate(self.cols):
+            if i in self.x:
+                if i in self.skip:
+                    continue
+                if i in self.nums:
+                    f.write("|  " + "we're looking at NUM col id #" +str(col.uid)+"\n")
+                    # f.write("|  |  n:    "+str(col.n)+"\n")
+                    f.write("|  |  median:    "+str(col.median)+"\n")
+                    # f.write("|  |  col:  "+str(col.vals)+"\n")
+                    f.write("|  |  name: "+str(col.name)+"\n")
+                else:
+                    f.write("| SYM col id # " + str(col.uid) + "\n")
+                    f.write("|  |  mode: "+str(col.mode)+"\n")
+                    f.write("|  |  most: "+str(col.most)+"\n")
+                    f.write("|  |  name: "+str(col.name)+"\n")
+                    for k, v in col.count.items():
+                        f.write("|  |  SYM Key : Value --> " + str(k) + ": " + str(v) + "\n")
+
+    def clusterlabels(self, f):
+        clabel = None #majority of the x values' class
+        xlabel = None
+        groundTruth = None #mode of the y/class col
+        pos = 0
+        neg = 0
+        match = 0
+
+        for i, col in enumerate(self.cols):
+            if i in self.y:
+                if i in self.skip:
+                    continue
+                if i in self.nums:
+                    groundTruth = col.median
+                else:
+                    groundTruth = col.mode
+
+        for v in self.rows:
+            if v not in self.skip:
+                xlabel = str(v[len(v)-1])
+                if xlabel == 'positive':
+                    pos += 1
+                else:
+                    neg +=1
+
+                if xlabel == groundTruth:
+                    match +=1
+
+        if pos >= neg:
+            clabel = 'positive'
+        else:
+            clabel = 'negative'
+
+
+        if clabel == groundTruth:
+            f.write("--------> Good Cluster Label <--------" +"\n")
+        else:
+            f.write("Bad Cluster Label" +"\n")
+
+        percent = "{0:.0%}".format(match/(len(self.rows)-1), 2)
+        f.write("Cluster Label: " + str(clabel) +"\n")
+        f.write("Ground Truth: " + str(groundTruth) +"\n")
+        f.write("Label Matches: " + str(match) + "/" + str(len(self.rows)-1)+"\n")
+        f.write("Label Matches Percentage: " + str(percent) +"\n")
+
 
 
 # ------------------------------------------------------------------------------
@@ -424,7 +513,7 @@ class Table:
         return closestRow #return the close point/row
 
     @staticmethod
-    def sneakClusters(items, table, enough, left = None, right= None):
+    def clusters(items, table, enough, left = None, right= None):
         if len(items) < enough: # if/while the length of the less than the stopping criteria #should be changable from command line
             leftTable = Table(0) #make a table w/ uid = 0
             leftTable + table.header # able the table header to the table ; leftTable.header = table.header?
@@ -446,11 +535,11 @@ class Table:
         rightTable + table.header
         for item in rightItems:
             rightTable + item
-
-        leftNode = Table.sneakClusters(leftItems, leftTable, enough, left, right)
-        rightNode = Table.sneakClusters(rightItems, rightTable, enough, left, right)
+        # print(rightTable.rows)
+        leftNode = Table.clusters(leftItems, leftTable, enough, left, right)
+        rightNode = Table.clusters(rightItems, rightTable, enough, left, right)
         root = TreeNode(left, right, leftTable, rightTable, leftNode, rightNode, False, table.header)
-        return root #why do you return the root?
+        return root
 
 
     def csvDump(self, f):
@@ -525,9 +614,17 @@ class TreeNode:
             if current.leaf:
                 count +=1
                 # print("leaf # " , str(count))
-                f.write("--------------------------------------------------" + "\n")
-                f.write("Dump Leaf Node/Table: " + str(current.uid) + "\n")
-                current.leftTable.ydump(f)
+                f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
+                f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
+                # f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
+                # f.write("Y Dump Leaf Node/Table: " + str(current.uid) + "\n")
+                # current.leftTable.ydump(f)
+                # f.write("--------------------------------------------------" + "\n")
+                # f.write("X Dump Leaf Node/Table: " + str(current.uid) + "\n")
+                # current.leftTable.xdump(f)
+                # f.write("--------------------------------------------------" + "\n")
+                f.write("Leaf Cluster Labels: " + str(current.uid) + "\n")
+                current.leftTable.clusterlabels(f)
 
             if current.leftNode is not None:
                 to_visit.append(current.leftNode)
@@ -659,14 +756,15 @@ def main():
     lines = Table.readfile("diabetes.csv")
     table = Table(1)
     ls = table.linemaker(lines)
-    for line in ls:
-        table + line
+    table + ls[0]
+    for l in ls[1:]:
+        table + l
     print("Printing Raw y-vals ...")
     with open("raw_y.csv", "w") as f:
         table.ydump(f)
 
 
-    root = Table.sneakClusters(table.rows, table, int(math.sqrt(len(table.rows))))
+    root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
 
     # with open("diabetes_clusters.csv", "w") as f:
     #     csvheader = table.csvHeader()
