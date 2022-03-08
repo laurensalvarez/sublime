@@ -407,7 +407,7 @@ class Table:
                     for k, v in col.count.items():
                         f.write("|  |  SYM Key : Value --> " + str(k) + ": " + str(v) + "\n")
 
-    def clusterlabels(self, f):
+    def clusterlabels(self, f): #for every leaf, given a leaf table
         clabel = None #majority of the x values' class
         xlabel = None
         groundTruth = None #mode of the y/class col
@@ -415,40 +415,29 @@ class Table:
         neg = 0
         match = 0
 
-        for i, col in enumerate(self.cols):
+        for i, col in enumerate(self.cols): #gets the mode of the class col for the leaf this is the cluster label
             if i in self.y:
                 if i in self.skip:
                     continue
                 if i in self.nums:
-                    groundTruth = col.median
+                    clabel = col.median
                 else:
-                    groundTruth = col.mode
+                    clabel = col.mode
 
         for v in self.rows:
             if v not in self.skip:
                 xlabel = str(v[len(v)-1])
-                if xlabel == 'positive':
-                    pos += 1
-                else:
-                    neg +=1
+                if xlabel == clabel:
+                    match += 1
 
-                if xlabel == groundTruth:
-                    match +=1
-
-        if pos >= neg:
-            clabel = 'positive'
-        else:
-            clabel = 'negative'
-
-
-        if clabel == groundTruth:
-            f.write("--------> Good Cluster Label <--------" +"\n")
+        matches = match/(len(self.rows)-1)
+        if matches >= 0.8:
+            f.write("--------------------------------> Good Cluster Label <--------" +"\n")
         else:
             f.write("Bad Cluster Label" +"\n")
 
         percent = "{0:.0%}".format(match/(len(self.rows)-1), 2)
         f.write("Cluster Label: " + str(clabel) +"\n")
-        f.write("Ground Truth: " + str(groundTruth) +"\n")
         f.write("Label Matches: " + str(match) + "/" + str(len(self.rows)-1)+"\n")
         f.write("Label Matches Percentage: " + str(percent) +"\n")
 
