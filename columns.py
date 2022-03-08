@@ -410,9 +410,6 @@ class Table:
     def clusterlabels(self, f): #for every leaf, given a leaf table
         clabel = None #majority of the x values' class
         xlabel = None
-        groundTruth = None #mode of the y/class col
-        pos = 0
-        neg = 0
         match = 0
 
         for i, col in enumerate(self.cols): #gets the mode of the class col for the leaf this is the cluster label
