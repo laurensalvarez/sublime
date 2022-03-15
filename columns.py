@@ -206,24 +206,50 @@ class Table:
                 return str(x)
 
     @staticmethod
-    def readfile(file): #reads in file
+    def readfile(file):
         lines = []
-        with open(file) as f: #ensures that the file will be closed when control leaves the block
-            for line in f: #for all the lines in the file 1 by1
-                line = line.strip() #get rid of all the white space
-                lines.append(Table.compiler(line)) # add all the lines compiled
-        # print("RETURN LINES:", lines)
-        return lines #return a list of strings
+        with open(file) as f:
+            curline = ""
+            for line in f:
+                line = line.strip()
+                if line[len(line) -1] ==",":
+                    curline += line
+                else:
+                    curline += line
+                    lines.append(Table.compiler(curline))
+                    curline = ""
+        return lines
 
     @staticmethod
     def linemaker(src, sep=",", doomed=r'([\n\t\r ]|#.*)'):
-        lines = [] #create a list of lines
+        lines = []
         for line in src:
-            line = line.strip() #removes any spaces or specified characters at the start and end of a string
-            line = re.sub(doomed, '', line) # uses regular exp package to replace substrings in strings
+            line = line.strip()
+            line = re.sub(doomed, '', line)
             if line:
-                lines.append([Table.compiler(x) for x in line.split(sep)]) #for every entry in the list of line elements add the complied
-        return lines  #returns all the pretty readable lines
+                lines.append([Table.compiler(x) for x in line.split(sep)])
+        return lines
+
+
+    # @staticmethod
+    # def readfile(file): #reads in file
+    #     lines = []
+    #     with open(file) as f: #ensures that the file will be closed when control leaves the block
+    #         for line in f: #for all the lines in the file 1 by1
+    #             line = line.strip() #get rid of all the white space
+    #             lines.append(Table.compiler(line)) # add all the lines compiled
+    #     # print("RETURN LINES:", lines)
+    #     return lines #return a list of strings
+    #
+    # @staticmethod
+    # def linemaker(src, sep=",", doomed=r'([\n\t\r ]|#.*)'):
+    #     lines = [] #create a list of lines
+    #     for line in src:
+    #         line = line.strip() #removes any spaces or specified characters at the start and end of a string
+    #         line = re.sub(doomed, '', line) # uses regular exp package to replace substrings in strings
+    #         if line:
+    #             lines.append([Table.compiler(x) for x in line.split(sep)]) #for every entry in the list of line elements add the complied
+    #     return lines  #returns all the pretty readable lines
 
 # ------------------------------------------------------------------------------
 # Table Class: Class Methods
@@ -778,45 +804,45 @@ def main():
     # print("FIRST test completed")
     # print("---------------------------")
 
-    print("---------------------------")
-    print("DS 1: Diabetes Case:")
-    print("---------------------------")
-
-    lines = Table.readfile("diabetes.csv")
-    table = Table(1)
-    ls = table.linemaker(lines)
-    table + ls[0]
-    for l in ls[1:]:
-        table + l
-    print("CSV --> Table done ...")
-    # print("Printing Raw y-vals ...")
-    # with open("diabetes_raw_y.csv", "w") as f:
-    #     table.ydump(f)
-
-    print("Shuffling rows ...")
-    random.shuffle(table.rows)
-    print("Clustering ...")
-    root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-
-    print("Clustering ...")
-    with open("diabetes_BFS.csv", "w") as f:
-        root.breadth_first_search(f)
-
-    print("BFS for cluster labels ...")
-    abcd = Abcd(db='randomIn',rx='all')
-    train = table.clabels
-    test  = table.y
-    print("how many cluster labels:", len(table.clabels))
-    print("how many test/y labels:", len(table.y))
-    # random.shuffle(test)
-    for actual, predicted in zip(train,test):
-        abcd.tell(actual,predicted)
-    abcd.header()
-    abcd.ask()
-
-    print("---------------------------")
-    print("--- completed")
-    print("---------------------------")
+    # print("---------------------------")
+    # print("DS 1: Diabetes Case:")
+    # print("---------------------------")
+    #
+    # lines = Table.readfile("diabetes.csv")
+    # table = Table(1)
+    # ls = table.linemaker(lines)
+    # table + ls[0]
+    # for l in ls[1:]:
+    #     table + l
+    # print("CSV --> Table done ...")
+    # # print("Printing Raw y-vals ...")
+    # # with open("diabetes_raw_y.csv", "w") as f:
+    # #     table.ydump(f)
+    #
+    # print("Shuffling rows ...")
+    # random.shuffle(table.rows)
+    # print("Clustering ...")
+    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
+    #
+    # print("Clustering ...")
+    # with open("diabetes_BFS.csv", "w") as f:
+    #     root.breadth_first_search(f)
+    #
+    # print("BFS for cluster labels ...")
+    # abcd = Abcd(db='randomIn',rx='all')
+    # train = table.clabels
+    # test  = table.y
+    # print("how many cluster labels:", len(table.clabels))
+    # print("how many test/y labels:", len(table.y))
+    # # random.shuffle(test)
+    # for actual, predicted in zip(train,test):
+    #     abcd.tell(actual,predicted)
+    # abcd.header()
+    # abcd.ask()
+    #
+    # print("---------------------------")
+    # print("--- completed")
+    # print("---------------------------")
     #
     # print("---------------------------")
     # print("DS 2: Adult Census Case:")
@@ -881,38 +907,38 @@ def main():
     # print("--- completed")
     # print("---------------------------")
 
-    # print("---------------------------")
-    # print("DS 4: COMPAS Case:") #ERROR NO ROWS
-    # print("---------------------------")
-    #
-    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/compas-scores-two-years.csv")
-    # table = Table(4)
-    # ls = table.linemaker(lines)
-    #
-    # table + ls[0]
-    # print("ls header:", ls[0])
-    # print("header length:", len(ls[0]))
-    # for l in ls[1:]:
-    #     print("adding line:", l, "length", len(l)) #ERROR ADDING THE LINE: inserting row X of size 51 expected =  53
-    #     table + l
-    #
-    # print("first pass table:", table.rows)
+    print("---------------------------")
+    print("DS 4: COMPAS Case:") #ERROR NO ROWS
+    print("---------------------------")
+
+    lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/compas-scores-two-years.csv")
+    table = Table(4)
+    ls = table.linemaker(lines)
+
+    table + ls[0]
+    print("ls header:", ls[0])
+    print("header length:", len(ls[0]))
+    for l in ls[1:]:
+        print("adding line:", l, "length", len(l)) #ERROR ADDING THE LINE: inserting row X of size 51 expected =  53
+        table + l
+
+    print("first pass table:", table.rows)
     # print("Printing Raw y-vals ...")
     # with open("compas_raw_y.csv", "w") as f:
     #     table.ydump(f)
-    #
-    # print("Clustering ...")
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    #
-    # with open("compas_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
-    #
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
+
+    print("Clustering ...")
+    root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
+
+    with open("compas_BFS.csv", "w") as f:
+        root.breadth_first_search(f)
+
+    print("---------------------------")
+    print("--- completed")
+    print("---------------------------")
 
     # print("---------------------------")
-    # print("DS 5: Default Credit Case:") #ERROR NO ROWS
+    # print("DS 5: Default Credit Case:")
     # print("---------------------------")
     #
     # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/defaultcredit.csv")
@@ -935,7 +961,7 @@ def main():
     # print("---------------------------")
     # print("--- completed")
     # print("---------------------------")
-    #
+
     # print("---------------------------")
     # print("DS 6: German Case:")
     # print("---------------------------")
@@ -962,7 +988,7 @@ def main():
     # print("---------------------------")
     #
     # print("---------------------------")
-    # print("DS 7: Home Credit Case:") #never loaded all the rows after 2 hours
+    # print("DS 7: Home Credit Case:") # loaded 266113 rows after 2 hours; error on compiling sym/num cols
     # print("---------------------------")
     #
     # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/homecreditapplication_train.csv")
@@ -971,15 +997,14 @@ def main():
     # table + ls[0]
     # for l in ls[1:]:
     #     table + l
-    #     print("table.rows length:",len(self.rows))
-    #
-    # print("Printing Raw y-vals ...")
-    # with open("homecredit_raw_y.csv", "w") as f:
-    #     table.ydump(f)
+    # print("CSV --> Table done ...")
+    # # print("Printing Raw y-vals ...")
+    # # with open("homecredit_raw_y.csv", "w") as f:
+    # #     table.ydump(f)
     #
     # print("Clustering ...")
     # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    #
+    # print("BFS for cluster labels ...")
     # with open("homecredit_BFS.csv", "w") as f:
     #     root.breadth_first_search(f)
     #
