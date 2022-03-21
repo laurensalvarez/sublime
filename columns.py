@@ -82,8 +82,9 @@ class Sym(Col):
 # ------------------------------------------------------------------------------
 # Numeric Column Class
 # ------------------------------------------------------------------------------
-#big = sys.maxsize
-#tiny = 1/big
+big = sys.maxsize
+tiny = 1/big
+
 class Num(Col):
     def __init__(self, name, uid, data=None):
         Col.__init__(self, name)
@@ -91,8 +92,8 @@ class Num(Col):
         self.mu = 0 #
         self.m2 = 0 # for moving std dev
         self.sd = 0
-        self.lo = sys.maxsize #float('inf')
-        self.hi = -1/sys.maxsize #-float('inf')
+        self.lo = big #float('inf')
+        self.hi = -tiny #-float('inf')
         self.vals = []
         self.uid = uid
         self.median = 0
@@ -163,7 +164,7 @@ class Num(Col):
         # print("self", self)
         # print("self.lo:", self.lo)
         # print("self.hi", self.hi)
-        return (x - self.lo)/(self.hi - self.lo + 10e-32)
+        return (x - self.lo)/(self.hi - self.lo + tiny)
 
 
 # ------------------------------------------------------------------------------
@@ -494,14 +495,14 @@ class Table:
     def distance(self,rowA, rowB): #distance between two points
         distance = 0
         if len(rowA) != len(rowB): #catch if they can't be compared?? why??
-            return -1/sys.maxsize
+            return -tiny
         for i, (a,b) in enumerate(zip(rowA, rowB)): #to iterate through an interable: an get the index with enumerate(), and get the elements of multiple iterables with zip()
             d = self.cols[i].dist(self.compiler(a),self.compiler(b)) #distance of both rows in each of the columns; compile the a & b bc it's in a text format
             distance += d #add the distances together
         return distance
 
     def mostDistant(self, rowA): #find the furthest point from row A
-        distance = -1/sys.maxsize
+        distance = -tiny
         farthestRow = None # assign to null; python uses None datatype
 
         for row in self.rows:
@@ -512,7 +513,7 @@ class Table:
         return farthestRow #return the far point/row
 
     def closestPoint(self,rowA):
-        distance = sys.maxsize
+        distance = big
         closestRow = None # assign to null; python uses None datatype
         secondClosest = None
 
@@ -530,12 +531,12 @@ class Table:
             leftTable + table.header # able the table header to the table ; leftTable.header = table.header?
             for item in items: #add all the items to the table
                 leftTable + item
-            return TreeNode(None, None, leftTable, None, None, None, True, table.header) #make a leaf treenode when the cluster have enough rows in them
-        #after you get enough items
+            return TreeNode(None, None, leftTable, None, table, None, None, True, table.header) #make a leaf treenode when the cluster have enough rows in them
+        #if you don't enough items
         if left != None and right != None:
             _, _, leftItems, rightItems = table.split(left, right) #fastmap bin split on the table
         else:
-            left, right, leftItems , rightItems  = table.split(left, right)
+            left, right, leftItems, rightItems = table.split(left, right)
 
         leftTable = Table(0)
         leftTable + table.header
@@ -549,7 +550,7 @@ class Table:
         # print(rightTable.rows)
         leftNode = Table.clusters(leftItems, leftTable, enough, left, right)
         rightNode = Table.clusters(rightItems, rightTable, enough, left, right)
-        root = TreeNode(left, right, leftTable, rightTable, leftNode, rightNode, False, table.header)
+        root = TreeNode(left, right, leftTable, rightTable, table, leftNode, rightNode, False, table.header)
         return root
 
 
@@ -598,12 +599,13 @@ class Table:
 # ------------------------------------------------------------------------------
 class TreeNode:
     _ids = count(0)
-    def __init__(self, left, right, leftTable, rightTable, leftNode, rightNode, leaf, header):
+    def __init__(self, left, right, leftTable, rightTable, currentTable, leftNode, rightNode, leaf, header):
         self.uid = next(self._ids)
         self.left = left
         self.right = right
         self.leftTable = leftTable
         self.rightTable = rightTable
+        self.currentTable = currentTable
         self.leaf = leaf
         self.header = header
         self.leftNode = leftNode
@@ -804,45 +806,42 @@ def main():
     # print("FIRST test completed")
     # print("---------------------------")
 
-    # print("---------------------------")
-    # print("DS 1: Diabetes Case:")
-    # print("---------------------------")
-    #
-    # lines = Table.readfile("diabetes.csv")
-    # table = Table(1)
-    # ls = table.linemaker(lines)
-    # table + ls[0]
-    # for l in ls[1:]:
-    #     table + l
-    # print("CSV --> Table done ...")
-    # # print("Printing Raw y-vals ...")
-    # # with open("diabetes_raw_y.csv", "w") as f:
-    # #     table.ydump(f)
-    #
-    # print("Shuffling rows ...")
-    # random.shuffle(table.rows)
-    # print("Clustering ...")
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    #
-    # print("Clustering ...")
-    # with open("diabetes_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
-    #
-    # print("BFS for cluster labels ...")
-    # abcd = Abcd(db='randomIn',rx='all')
-    # train = table.clabels
-    # test  = table.y
-    # print("how many cluster labels:", len(table.clabels))
-    # print("how many test/y labels:", len(table.y))
-    # # random.shuffle(test)
-    # for actual, predicted in zip(train,test):
-    #     abcd.tell(actual,predicted)
-    # abcd.header()
-    # abcd.ask()
-    #
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
+    print("---------------------------")
+    print("DS 1: Diabetes Case:")
+    print("---------------------------")
+
+    lines = Table.readfile("diabetes.csv")
+    table = Table(1)
+    ls = table.linemaker(lines)
+    table + ls[0]
+    for l in ls[1:]:
+        table + l
+    print("CSV --> Table done ...")
+
+    print("Shuffling rows ...")
+    random.shuffle(table.rows)
+    print("Clustering ...")
+    root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
+
+    print("Clustering ...")
+    with open("diabetes_BFS.csv", "w") as f:
+        root.breadth_first_search(f)
+
+    print("BFS for cluster labels ...")
+    abcd = Abcd(db='randomIn',rx='all')
+    train = table.clabels
+    test  = table.y
+    print("how many cluster labels:", len(table.clabels))
+    print("how many test/y labels:", len(table.y))
+    # random.shuffle(test)
+    for actual, predicted in zip(train,test):
+        abcd.tell(actual,predicted)
+    abcd.header()
+    abcd.ask()
+
+    print("---------------------------")
+    print("--- completed")
+    print("---------------------------")
     #
     # print("---------------------------")
     # print("DS 2: Adult Census Case:")
@@ -907,35 +906,35 @@ def main():
     # print("--- completed")
     # print("---------------------------")
 
-    print("---------------------------")
-    print("DS 4: COMPAS Case:") #ERROR NO ROWS
-    print("---------------------------")
-
-    lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/compas-scores-two-years.csv")
-    table = Table(4)
-    ls = table.linemaker(lines)
-
-    table + ls[0]
-    print("ls header:", ls[0])
-    print("header length:", len(ls[0]))
-    for l in ls[1:]:
-        print("adding line:", l, "length", len(l)) #ERROR ADDING THE LINE: inserting row X of size 51 expected =  53
-        table + l
-
-    print("first pass table:", table.rows)
-    # print("Printing Raw y-vals ...")
-    # with open("compas_raw_y.csv", "w") as f:
-    #     table.ydump(f)
-
-    print("Clustering ...")
-    root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-
-    with open("compas_BFS.csv", "w") as f:
-        root.breadth_first_search(f)
-
-    print("---------------------------")
-    print("--- completed")
-    print("---------------------------")
+    # print("---------------------------")
+    # print("DS 4: COMPAS Case:") #ERROR NO ROWS
+    # print("---------------------------")
+    #
+    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/compas-scores-two-years.csv")
+    # table = Table(4)
+    # ls = table.linemaker(lines)
+    #
+    # table + ls[0]
+    # print("ls header:", ls[0])
+    # print("header length:", len(ls[0]))
+    # for l in ls[1:]:
+    #     print("adding line:", l, "length", len(l)) #ERROR ADDING THE LINE: inserting row X of size 51 expected =  53
+    #     table + l
+    #
+    # print("first pass table:", table.rows)
+    # # print("Printing Raw y-vals ...")
+    # # with open("compas_raw_y.csv", "w") as f:
+    # #     table.ydump(f)
+    #
+    # print("Clustering ...")
+    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
+    #
+    # with open("compas_BFS.csv", "w") as f:
+    #     root.breadth_first_search(f)
+    #
+    # print("---------------------------")
+    # print("--- completed")
+    # print("---------------------------")
 
     # print("---------------------------")
     # print("DS 5: Default Credit Case:")
