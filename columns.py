@@ -206,51 +206,29 @@ class Table:
             except ValueError:
                 return str(x)
 
+
+
     @staticmethod
-    def readfile(file):
-        lines = []
-        with open(file) as f:
+    def readfile(file, sep= ",", doomed= r'([\n\t\r ]|#.*)'): #reads in file
+        datalines = []
+        finallines = []
+        with open(file) as f: #ensures that the file will be closed when control leaves the block
             curline = ""
             for line in f:
-                line = line.strip()
-                if line[len(line) -1] ==",":
+                line = line.strip() #get rid of all the white space
+                if line[len(line) -1] == ",":
                     curline += line
                 else:
                     curline += line
-                    lines.append(Table.compiler(curline))
+                    datalines.append(Table.compiler(curline))
                     curline = ""
-        return lines
 
-    @staticmethod
-    def linemaker(src, sep=",", doomed=r'([\n\t\r ]|#.*)'):
-        lines = []
-        for line in src:
-            line = line.strip()
-            line = re.sub(doomed, '', line)
+        for l in datalines:
+            line = l.strip()
+            line = re.sub(doomed, '', line) # uses regular exp package to replace substrings in strings
             if line:
-                lines.append([Table.compiler(x) for x in line.split(sep)])
-        return lines
-
-
-    # @staticmethod
-    # def readfile(file): #reads in file
-    #     lines = []
-    #     with open(file) as f: #ensures that the file will be closed when control leaves the block
-    #         for line in f: #for all the lines in the file 1 by1
-    #             line = line.strip() #get rid of all the white space
-    #             lines.append(Table.compiler(line)) # add all the lines compiled
-    #     # print("RETURN LINES:", lines)
-    #     return lines #return a list of strings
-    #
-    # @staticmethod
-    # def linemaker(src, sep=",", doomed=r'([\n\t\r ]|#.*)'):
-    #     lines = [] #create a list of lines
-    #     for line in src:
-    #         line = line.strip() #removes any spaces or specified characters at the start and end of a string
-    #         line = re.sub(doomed, '', line) # uses regular exp package to replace substrings in strings
-    #         if line:
-    #             lines.append([Table.compiler(x) for x in line.split(sep)]) #for every entry in the list of line elements add the complied
-    #     return lines  #returns all the pretty readable lines
+                finallines.append([Table.compiler(x) for x in line.split(sep)])
+        return finallines  #returns all the pretty readable lines
 
 # ------------------------------------------------------------------------------
 # Table Class: Class Methods
@@ -595,8 +573,9 @@ class Table:
         header += "\n"
         return header
 
+
 # ------------------------------------------------------------------------------
-# Tree class for clustering
+# Tree class
 # ------------------------------------------------------------------------------
 class TreeNode:
     _ids = count(0)
@@ -611,6 +590,10 @@ class TreeNode:
         self.header = header
         self.leftNode = leftNode
         self.rightNode = rightNode
+
+# ------------------------------------------------------------------------------
+# TreeNode Class Helper Fuctions: Functional Tree Traversal -- replaces BFS
+# ------------------------------------------------------------------------------
 
 def nodes(root): # gets all the nodes
     if root:
@@ -628,6 +611,7 @@ def small2Big(root,how=None): # for all of the leaves from smallest to largest p
   for leaf in sorted(nodes(root), key=how or rowSize):
     t = leaf.leftTable
     print(len(t.rows), [col.mid() for col in t.cols])
+
 
     def breadth_first_search(self, f):
      # """In BFS the Node Values at each level of the Tree are traversed before going to next level"""
@@ -687,63 +671,63 @@ def small2Big(root,how=None): # for all of the leaves from smallest to largest p
 # ------------------------------------------------------------------------------
 # Evaluation Metrics
 # ------------------------------------------------------------------------------
-class Abcd:
-  def __init__(i,db="all",rx="all"):
-    i.db = db; i.rx=rx;
-    i.yes = i.no = 0
-    i.known = {}; i.a= {}; i.b= {}; i.c= {}; i.d= {}
-
-  def __call__(i,actual=None,predicted=None):
-    return i.keep(actual,predicted)
-
-  def tell(i,actual,predict):
-    i.knowns(actual)
-    i.knowns(predict)
-    if actual == predict: i.yes += 1
-    else                :  i.no += 1
-    for x in  i.known:
-      if actual == x:
-        if  predict == actual: i.d[x] += 1
-        else                 : i.b[x] += 1
-      else:
-        if  predict == x     : i.c[x] += 1
-        else                 : i.a[x] += 1
-
-  def knowns(i,x):
-    if not x in i.known:
-      i.known[x]= i.a[x]= i.b[x]= i.c[x]= i.d[x]= 0.0
-    i.known[x] += 1
-    if (i.known[x] == 1):
-      i.a[x] = i.yes + i.no
-
-  def header(i):
-    print("#",('{0:20s} {1:11s}  {2:4s}  {3:4s} {4:4s} '+ \
-           '{5:4s}{6:4s} {7:3s} {8:3s} {9:3s} '+ \
-           '{10:3s} {11:3s}{12:3s}{13:10s}').format(
-      "db", "rx",
-     "n", "a","b","c","d","acc","pd","pf","prec",
-      "f","g","class"))
-    print('-'*100)
-
-  def ask(i):
-    def p(y) : return int(100*y + 0.5)
-    def n(y) : return int(y)
-    pd = pf = pn = prec = g = f = acc = 0
-    for x in i.known:
-      a= i.a[x]; b= i.b[x]; c= i.c[x]; d= i.d[x]
-      if (b+d)    : pd   = d     / (b+d)
-      if (a+c)    : pf   = c     / (a+c)
-      if (a+c)    : pn   = (b+d) / (a+c)
-      if (c+d)    : prec = d     / (c+d)
-      if (1-pf+pd): g    = 2*(1-pf)*pd / (1-pf+pd)
-      if (prec+pd): f    = 2*prec*pd/(prec+pd)
-      if (i.yes + i.no): acc= i.yes/(i.yes+i.no)
-      print("#",('{0:20s} {1:10s} {2:4d} {3:4d} {4:4d} '+ \
-          '{5:4d} {6:4d} {7:4d} {8:3d} {9:3d} '+ \
-         '{10:3d} {11:3d} {12:3d} {13:10s}').format(i.db,
-          i.rx,  n(b + d), n(a), n(b),n(c), n(d),
-          p(acc), p(pd), p(pf), p(prec), p(f), p(g),x))
-      #print x,p(pd),p(prec)
+# class Abcd:
+#   def __init__(i,db="all",rx="all"):
+#     i.db = db; i.rx=rx;
+#     i.yes = i.no = 0
+#     i.known = {}; i.a= {}; i.b= {}; i.c= {}; i.d= {}
+#
+#   def __call__(i,actual=None,predicted=None):
+#     return i.keep(actual,predicted)
+#
+#   def tell(i,actual,predict):
+#     i.knowns(actual)
+#     i.knowns(predict)
+#     if actual == predict: i.yes += 1
+#     else                :  i.no += 1
+#     for x in  i.known:
+#       if actual == x:
+#         if  predict == actual: i.d[x] += 1
+#         else                 : i.b[x] += 1
+#       else:
+#         if  predict == x     : i.c[x] += 1
+#         else                 : i.a[x] += 1
+#
+#   def knowns(i,x):
+#     if not x in i.known:
+#       i.known[x]= i.a[x]= i.b[x]= i.c[x]= i.d[x]= 0.0
+#     i.known[x] += 1
+#     if (i.known[x] == 1):
+#       i.a[x] = i.yes + i.no
+#
+#   def header(i):
+#     print("#",('{0:20s} {1:11s}  {2:4s}  {3:4s} {4:4s} '+ \
+#            '{5:4s}{6:4s} {7:3s} {8:3s} {9:3s} '+ \
+#            '{10:3s} {11:3s}{12:3s}{13:10s}').format(
+#       "db", "rx",
+#      "n", "a","b","c","d","acc","pd","pf","prec",
+#       "f","g","class"))
+#     print('-'*100)
+#
+#   def ask(i):
+#     def p(y) : return int(100*y + 0.5)
+#     def n(y) : return int(y)
+#     pd = pf = pn = prec = g = f = acc = 0
+#     for x in i.known:
+#       a= i.a[x]; b= i.b[x]; c= i.c[x]; d= i.d[x]
+#       if (b+d)    : pd   = d     / (b+d)
+#       if (a+c)    : pf   = c     / (a+c)
+#       if (a+c)    : pn   = (b+d) / (a+c)
+#       if (c+d)    : prec = d     / (c+d)
+#       if (1-pf+pd): g    = 2*(1-pf)*pd / (1-pf+pd)
+#       if (prec+pd): f    = 2*prec*pd/(prec+pd)
+#       if (i.yes + i.no): acc= i.yes/(i.yes+i.no)
+#       print("#",('{0:20s} {1:10s} {2:4d} {3:4d} {4:4d} '+ \
+#           '{5:4d} {6:4d} {7:4d} {8:3d} {9:3d} '+ \
+#          '{10:3d} {11:3d} {12:3d} {13:10s}').format(i.db,
+#           i.rx,  n(b + d), n(a), n(b),n(c), n(d),
+#           p(acc), p(pd), p(pf), p(prec), p(f), p(g),x))
+#       #print x,p(pd),p(prec)
 
 
 # ------------------------------------------------------------------------------
@@ -826,9 +810,8 @@ def main():
 
     lines = Table.readfile("diabetes.csv")
     table = Table(1)
-    ls = table.linemaker(lines)
-    table + ls[0]
-    for l in ls[1:]:
+    table + lines[0]
+    for l in lines[1:]:
         table + l
     print("CSV --> Table done ...")
 
@@ -836,7 +819,7 @@ def main():
     random.shuffle(table.rows)
     print("Clustering ...")
     root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    small2Big(root) #bfs for the leaves
+    small2Big(root) #bfs for the leaves gives median row
     # print("Clustering ...")
     # with open("diabetes_BFS.csv", "w") as f:
     #     root.breadth_first_search(f)
