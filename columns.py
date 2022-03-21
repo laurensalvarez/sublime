@@ -612,9 +612,22 @@ class TreeNode:
         self.leftNode = leftNode
         self.rightNode = rightNode
 
-    # def deepestNodes(self): #find the childless nodes aka the deepest level
-    #     for
+def nodes(root): # gets all the nodes
+    if root:
+        for node in nodes(root.leftNode): yield node
+        if root.leaf:  yield root
+        for node in nodes(root.rightNode): yield node
 
+def names(root:TreeNode): #gets all the unique ids of the node
+  for node in nodes(root):
+    print(node.leftTable.cols[1].uid)
+
+def rowSize(t): return len(t.leftTable.rows) #gets the size of the rows
+
+def small2Big(root,how=None): # for all of the leaves from smallest to largest print len of rows & median
+  for leaf in sorted(nodes(root), key=how or rowSize):
+    t = leaf.leftTable
+    print(len(t.rows), [col.mid() for col in t.cols])
 
     def breadth_first_search(self, f):
      # """In BFS the Node Values at each level of the Tree are traversed before going to next level"""
@@ -823,22 +836,22 @@ def main():
     random.shuffle(table.rows)
     print("Clustering ...")
     root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
+    small2Big(root) #bfs for the leaves
+    # print("Clustering ...")
+    # with open("diabetes_BFS.csv", "w") as f:
+    #     root.breadth_first_search(f)
 
-    print("Clustering ...")
-    with open("diabetes_BFS.csv", "w") as f:
-        root.breadth_first_search(f)
-
-    print("BFS for cluster labels ...")
-    abcd = Abcd(db='randomIn',rx='all')
-    train = table.clabels
-    test  = table.y
-    print("how many cluster labels:", len(table.clabels))
-    print("how many test/y labels:", len(table.y))
-    # random.shuffle(test)
-    for actual, predicted in zip(train,test):
-        abcd.tell(actual,predicted)
-    abcd.header()
-    abcd.ask()
+    # print("BFS for cluster labels ...")
+    # abcd = Abcd(db='randomIn',rx='all')
+    # train = table.clabels
+    # test  = table.y
+    # print("how many cluster labels:", len(table.clabels))
+    # print("how many test/y labels:", len(table.y))
+    # # random.shuffle(test)
+    # for actual, predicted in zip(train,test):
+    #     abcd.tell(actual,predicted)
+    # abcd.header()
+    # abcd.ask()
 
     print("---------------------------")
     print("--- completed")
