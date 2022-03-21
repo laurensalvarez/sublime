@@ -525,7 +525,8 @@ class Table:
         return closestRow #return the close point/row
 
     @staticmethod
-    def clusters(items, table, enough, left = None, right= None):
+    def clusters(items, table, enough, left = None, right= None, depth = 0):
+        print("|.. " * depth,len(table.rows))
         if len(items) < enough: # if/while the length of the less than the stopping criteria #should be changable from command line
             leftTable = Table(0) #make a table w/ uid = 0
             leftTable + table.header # able the table header to the table ; leftTable.header = table.header?
@@ -548,8 +549,8 @@ class Table:
         for item in rightItems:
             rightTable + item
         # print(rightTable.rows)
-        leftNode = Table.clusters(leftItems, leftTable, enough, left, right)
-        rightNode = Table.clusters(rightItems, rightTable, enough, left, right)
+        leftNode = Table.clusters(leftItems, leftTable, enough, left, right, depth = depth+1)
+        rightNode = Table.clusters(rightItems, rightTable, enough, left, right, depth = depth+1)
         root = TreeNode(left, right, leftTable, rightTable, table, leftNode, rightNode, False, table.header)
         return root
 
