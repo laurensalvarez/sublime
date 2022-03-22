@@ -245,32 +245,48 @@ class Table:
         for val in line:
             val = self.compiler(val) #compile the val datatype
             if val[0] == ":" or val[0] == "?" : #check the first item is : then skip it; add to skip list
-                self.skip.append(index) # index begins with 1
+                if val[0].isupper():
+                    self.skip.append(Num(''.join(c for c in val), index))
+                else:
+                    self.skip.append(Sym(''.join(c for c in val), index))
+
             if val[0].isupper() or "-" in val or "+" in val: #assuming goals will be numeric cols
-                self.nums.append(index) # add to num
+                self.nums.append(Num(''.join(c for c in val if not c in ['?',':']), index)) # add to num
                 # print("NUM col added")
                 self.cols.append(Num(''.join(c for c in val if not c in ['?',':']), index)) # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
             else:
-                self.syms.append(index)
+                self.syms.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
                 # print("SYM col added")
                 self.cols.append(Sym(''.join(c for c in val if not c in ['?',":"]), index))
 
             if "!" in val or "-" in val or "+" in val: #for any goal, or klass add to y
-                self.y.append(index)
-                self.goals.append(index)
-                if "-" in val:
-                    self.w[index] = -1
-                if "+" in val:
-                    self.w[index] = 1
-                if "!" in val:
-                    self.klass.append(index)
+                if val[0].isupper():
+                    self.y.append(Num(''.join(c for c in val if not c in ['?',':']), index))
+                    self.goals.append(Num(''.join(c for c in val if not c in ['?',':']), index))
+                    if "-" in val:
+                        self.w[index] = -1
+                    if "+" in val:
+                        self.w[index] = 1
+                    if "!" in val:
+                        self.klass.append(Num(''.join(c for c in val if not c in ['?',':']), index))
+                else:
+                    self.y.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
+                    self.goals.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
+                    if "-" in val:
+                        self.w[index] = -1
+                    if "+" in val:
+                        self.w[index] = 1
+                    if "!" in val:
+                        self.klass.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
 
             if "-" not in val and "+" not in val and "!" not in val: #catch the rest and add to x
-                self.x.append(index)
                 if val[0].isupper(): #check is num
-                    self.xnums.append(index) #add the index of the col to the list
+                    self.x.append(Num(''.join(c for c in val if not c in ['?',':']), index))
+                    self.xnums.append(Num(''.join(c for c in val if not c in ['?',':']), index)) #add the index of the col to the list
                 else: #else add to sym
-                    self.xsyms.append(index) #add the index of the col to the list
+                    self.x.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
+                    self.xsyms.append(Sym(''.join(c for c in val if not c in ['?',':']), index)) #add the index of the col to the list
+
             index+=1 #increase by one
             self.linesize = index
             self.fileline += 1
@@ -285,11 +301,8 @@ class Table:
         realindex = 0
         index = 0
         for val in line:
-            # print("LINE:" , line)
-            # print("VAL in line:" , val)
             if index not in self.skip: #check if it needs to be skipped
                 if val == "?" or val == "":
-                    #val = self.compiler(val) #compile the val datatype
                     realline.append(val) #add to realline index
                     realindex += 1
                     continue
@@ -814,12 +827,29 @@ def main():
     for l in lines[1:]:
         table + l
     print("CSV --> Table done ...")
-
+    print("---------------------------")
+    print("Printing all attributes ")
+    print(" Table Cols:", table.cols)
+    print(" Table Num Cols Vals:", table.cols[0].vals)
+    print(" Table Num Cols Mid:", table.cols[0].median)
+    print(" Table Rows:", len(table.rows))
+    print(" Table Skips:", len(table.skip))
+    print(" Table Goals:", len(table.goals))
+    print(" Table Klass:", len(table.klass))
+    print(" Table Header:", table.header)
+    print(" Table Nums:", len(table.nums))
+    print(" Table Syms:", len(table.syms))
+    print(" Table xNums:", table.xnums)
+    print(" Table xSyms:", table.xsyms) #why is this 2???
+    ##########################
     print("Shuffling rows ...")
     random.shuffle(table.rows)
     print("Clustering ...")
     root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
     small2Big(root) #bfs for the leaves gives median row
+    print("printing all the y objs:")
+    for x in table.xnums:
+        print(x)
     # print("Clustering ...")
     # with open("diabetes_BFS.csv", "w") as f:
     #     root.breadth_first_search(f)
