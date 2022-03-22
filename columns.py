@@ -421,41 +421,6 @@ class Table:
                     for k, v in col.count.items():
                         f.write("|  |  SYM Key : Value --> " + str(k) + ": " + str(v) + "\n")
 
-    def clusterlabels(self, f): #for every leaf, given a leaf table
-        clabel = None #majority of the x values' class
-        xlabel = None
-        match = 0
-
-        for i, col in enumerate(self.cols): #gets the mode of the class col for the leaf this is the cluster label
-            if i in self.y:
-                if i in self.skip:
-                    continue
-                if i in self.nums:
-                    clabel = col.median
-                else:
-                    clabel = col.mode
-
-        for v in self.rows:
-            if v not in self.skip:
-                xlabel = str(v[len(v)-1])
-                if xlabel == clabel:
-                    match += 1
-
-        print('length of y:', len(self.rows))
-        self.clabels = [clabel for i in range(len(self.rows))]
-        print('length of clabels after populating:', len(self.clabels))
-        matches = match/(len(self.rows)-1)
-        if matches >= 0.8:
-            f.write("--------------------------------> Good Cluster Label <--------" +"\n")
-        else:
-            f.write("Bad Cluster Label" +"\n")
-
-        percent = "{0:.0%}".format(match/(len(self.rows)-1), 2)
-        f.write("Cluster Label: " + str(clabel) +"\n")
-        f.write("Label Matches: " + str(match) + "/" + str(len(self.rows)-1)+"\n")
-        f.write("Label Matches Percentage: " + str(percent) +"\n")
-
-
 
 # ------------------------------------------------------------------------------
 # Clustering Fastmap;still in table class (change to it's own class???)
@@ -586,6 +551,26 @@ class Table:
         header += "\n"
         return header
 
+    # def clusterlabels(self, list): #for every leaf, given a leaf table
+    #     medians = list
+    #     clabel = None #majority of the x values' class
+    #     xlabel = None
+    #     match = 0
+    #
+    #
+    #     print('length of y:', len(self.rows))
+    #     self.clabels = [clabel for i in range(len(self.rows))]
+    #     print('length of clabels after populating:', len(self.clabels))
+    #     matches = match/(len(self.rows)-1)
+    #     if matches >= 0.8:
+    #         f.write("--------------------------------> Good Cluster Label <--------" +"\n")
+    #     else:
+    #         f.write("Bad Cluster Label" +"\n")
+    #
+    #     percent = "{0:.0%}".format(match/(len(self.rows)-1), 2)
+    #     f.write("Cluster Label: " + str(clabel) +"\n")
+    #     f.write("Label Matches: " + str(match) + "/" + str(len(self.rows)-1)+"\n")
+    #     f.write("Label Matches Percentage: " + str(percent) +"\n")
 
 # ------------------------------------------------------------------------------
 # Tree class
@@ -605,18 +590,19 @@ class TreeNode:
         self.rightNode = rightNode
 
 # ------------------------------------------------------------------------------
-# TreeNode Class Helper Fuctions: Functional Tree Traversal -- replaces BFS
+# TreeNode Class Helper Fuctions: Functional Tree Traversal
 # ------------------------------------------------------------------------------
 
-def nodes(root): # gets all the nodes
+def nodes(root): # gets all the  nodes
     if root:
-        for node in nodes(root.leftNode): yield node
+        for node in nodes(root.leftNode): yield node #yield returns from a function without destroying it
         if root.leaf:  yield root
         for node in nodes(root.rightNode): yield node
 
-def names(root:TreeNode): #gets all the unique ids of the node
-  for node in nodes(root):
-    print(node.leftTable.cols[1].uid)
+def names(root:TreeNode): #gets all the col names of the node
+    for node in nodes(root):
+        for i in range(len(node.leftTable.cols) -1):
+            print(node.leftTable.cols[i].name)
 
 def rowSize(t): return len(t.leftTable.rows) #gets the size of the rows
 
@@ -625,36 +611,115 @@ def small2Big(root,how=None): # for all of the leaves from smallest to largest p
     t = leaf.leftTable
     print(len(t.rows), [col.mid() for col in t.cols])
 
+def sortedleafclusters(root,f,how=None): # for all of the leaves from smallest to largest print len of rows & median
+    clabel = None
+    xlabel = None
+    match = 0
+    counter = 0
 
-    def breadth_first_search(self, f):
-     # """In BFS the Node Values at each level of the Tree are traversed before going to next level"""
-        count = 0
-        to_visit = []
-        to_visit.append(self)
+    for leaf in sorted(nodes(root), key=how or rowSize):
+        counter += 1
+        print("LEAF:", counter)
+        t = leaf.leftTable
+        ycol = len(t.cols)-1
+        clabel = t.cols[ycol].mid()
+        print("clabel", clabel)
 
-        while len(to_visit) != 0:
-            current = to_visit.pop(0)
-            # print("current node:" , str(current.uid))
-            if current.leaf:
-                count +=1
-                # print("leaf # " , str(count))
-                f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
-                f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
-                # f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
-                # f.write("Y Dump Leaf Node/Table: " + str(current.uid) + "\n")
-                # current.leftTable.ydump(f)
-                # f.write("--------------------------------------------------" + "\n")
-                # f.write("X Dump Leaf Node/Table: " + str(current.uid) + "\n")
-                # current.leftTable.xdump(f)
-                # f.write("--------------------------------------------------" + "\n")
-                f.write("Leaf Cluster Labels: " + str(current.uid) + "\n")
-                current.leftTable.clusterlabels(f)
+        # for col in t.cols:
+        #     print("col:", col)
+        #     print("t.y:", t.y)
+        #     if col in t.y:
+        #         clabel = t.col.mid()
+        #         print("clabel col:", str(t.col))
 
-            if current.leftNode is not None:
-                to_visit.append(current.leftNode)
+        for row in t.rows:
+            if row not in t.skip:
+                xlabel = str(row[len(row)-1])
+                print("xlabel:", str(xlabel))
+                if xlabel == clabel:
+                    match += 1
 
-            if current.rightNode is not None:
-                to_visit.append(current.rightNode)
+        t.clabels = [clabel for i in range(len(t.rows))]
+        matches = match/(len(t.rows)-1)
+        if matches >= 0.78:
+            f.write("--------------------------------> Good Cluster Label <--------" +"\n")
+        else:
+            f.write("Bad Cluster Label" +"\n")
+
+        percent = "{0:.0%}".format(match/(len(t.rows)-1), 2)
+        f.write("Cluster Label: " + str(clabel) +"\n")
+        f.write("Label Matches: " + str(match) + "/" + str(len(t.rows)-1)+"\n")
+        f.write("Label Matches Percentage: " + str(percent) +"\n")
+
+        match = 0
+
+
+
+
+        # counter +=1
+        # print("LEAF", counter)
+        # t = leaf.leftTable
+        # clabel = t.y[0].mid()
+        # print("y[0]:", str(t.y[0]))
+        # print("mode call:", str(t.y[0].mode))
+        # print("mid function:", str(t.y[0].mid()))
+        # print("clabel:", str(clabel))
+        #
+        # for row in t.rows:
+        #     if row not in t.skip:
+        #         xlabel = str(row[len(row)-1])
+        #         print("xlabel:", str(xlabel))
+        #         if xlabel == clabel:
+        #             match += 1
+        #             print("match:", match)
+        #
+        # print('length of y:', len(t.rows))
+        # t.clabels = [clabel for i in range(len(t.rows))]
+        # print('length of clabels after populating:', len(t.clabels))
+        #
+        # matches = match/(len(t.rows)-1)
+        # print('matches:', matches)
+        # if matches >= 0.8:
+        #     f.write("--------------------------------> Good Cluster Label <--------" +"\n")
+        # else:
+        #     f.write("Bad Cluster Label" +"\n")
+        #
+        # percent = "{0:.0%}".format(match/(len(t.rows)-1), 2)
+        # f.write("Cluster Label: " + str(clabel) +"\n")
+        # f.write("Label Matches: " + str(match) + "/" + str(len(t.rows)-1)+"\n")
+        # f.write("Label Matches Percentage: " + str(percent) +"\n")
+        #
+        # match = 0
+
+    # def breadth_first_search(self, f):
+    #  # """In BFS the Node Values at each level of the Tree are traversed before going to next level"""
+    #     count = 0
+    #     to_visit = []
+    #     to_visit.append(self)
+    #
+    #     while len(to_visit) != 0:
+    #         current = to_visit.pop(0)
+    #         # print("current node:" , str(current.uid))
+    #         if current.leaf:
+    #             count +=1
+    #             # print("leaf # " , str(count))
+    #             f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
+    #             f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
+    #             # f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
+    #             # f.write("Y Dump Leaf Node/Table: " + str(current.uid) + "\n")
+    #             # current.leftTable.ydump(f)
+    #             # f.write("--------------------------------------------------" + "\n")
+    #             # f.write("X Dump Leaf Node/Table: " + str(current.uid) + "\n")
+    #             # current.leftTable.xdump(f)
+    #             # f.write("--------------------------------------------------" + "\n")
+    #             f.write("Leaf Cluster Labels: " + str(current.uid) + "\n")
+    #             current.leftTable.clusterlabels(f)
+    #
+    #         if current.leftNode is not None:
+    #             to_visit.append(current.leftNode)
+    #
+    #         if current.rightNode is not None:
+    #             to_visit.append(current.rightNode)
 
     def dump(self, f):
         #DFS
@@ -847,9 +912,10 @@ def main():
     print("Clustering ...")
     root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
     small2Big(root) #bfs for the leaves gives median row
-    print("printing all the y objs:")
-    for x in table.xnums:
-        print(x)
+    with open("diabetes_BFS.csv", "w") as f:
+        sortedleafclusters(root,f)
+    # print("names of nodes:")
+    # names(root)
     # print("Clustering ...")
     # with open("diabetes_BFS.csv", "w") as f:
     #     root.breadth_first_search(f)
