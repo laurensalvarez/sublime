@@ -161,9 +161,6 @@ class Num(Col):
 
     def _numNorm(self, x):
         "normalize the column." #Min-Max Normalization + a super tiny num so you never divide by 0
-        # print("self", self)
-        # print("self.lo:", self.lo)
-        # print("self.hi", self.hi)
         return (x - self.lo)/(self.hi - self.lo + tiny)
 
 
@@ -207,11 +204,16 @@ class Table:
                 return str(x)
 
 
+    def fillblanks(line):
+        linenoblanks = ""
 
+
+        return linenoblanks
     @staticmethod
     def readfile(file, sep= ",", doomed= r'([\n\t\r ]|#.*)'): #reads in file
         datalines = []
         finallines = []
+
         with open(file) as f: #ensures that the file will be closed when control leaves the block
             curline = ""
             for line in f:
@@ -242,50 +244,54 @@ class Table:
     def create_cols(self, line):
         self.header = line #since add recognized no header, assign first line as a header.
         index = 0
+
         for val in line:
             val = self.compiler(val) #compile the val datatype
-            if val[0] == ":" or val[0] == "?" : #check the first item is : then skip it; add to skip list
+
+            if val[0] == ":" or val[0] == "?" : #do we skip? if we skip then it doesn't matter what we do? bc it'll never be populated?
                 if val[0].isupper():
-                    self.skip.append(Num(''.join(c for c in val), index))
+                    self.skip.append(Num(''.join(c for c in val), index)) # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
                 else:
                     self.skip.append(Sym(''.join(c for c in val), index))
 
-            if val[0].isupper() or "-" in val or "+" in val: #assuming goals will be numeric cols
-                self.nums.append(Num(''.join(c for c in val if not c in ['?',':']), index)) # add to num
-                # print("NUM col added")
-                self.cols.append(Num(''.join(c for c in val if not c in ['?',':']), index)) # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
-            else:
-                self.syms.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
-                # print("SYM col added")
-                self.cols.append(Sym(''.join(c for c in val if not c in ['?',":"]), index))
+            if val[0].isupper(): # is it a num?
+                col = Num(''.join(c for c in val if not c in ['?',':']), index)
+                self.nums.append(col)
+                self.cols.append(col)
 
-            if "!" in val or "-" in val or "+" in val: #for any goal, or klass add to y
-                if val[0].isupper():
-                    self.y.append(Num(''.join(c for c in val if not c in ['?',':']), index))
-                    self.goals.append(Num(''.join(c for c in val if not c in ['?',':']), index))
+                if "!" in val or "-" in val or "+" in val: #is it a klass, or goal (goals are y)
+                    self.y.append(col)
+                    self.goals.append(col)
                     if "-" in val:
                         self.w[index] = -1
                     if "+" in val:
                         self.w[index] = 1
                     if "!" in val:
-                        self.klass.append(Num(''.join(c for c in val if not c in ['?',':']), index))
-                else:
-                    self.y.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
-                    self.goals.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
+                        self.klass.append(col)
+
+                if "-" not in val and "+" not in val and "!" not in val: # then it's an x
+                    self.x.append(col)
+                    self.xnums.append(col)
+
+            else: #no, it's a sym
+                col = Sym(''.join(c for c in val if not c in ['?',':']), index)
+                self.syms.append(col)
+                self.cols.append(col)
+
+                if "!" in val or "-" in val or "+" in val: #is it a klass, or goal (goals are y)
+                    self.y.append(col)
+                    self.goals.append(col)
                     if "-" in val:
                         self.w[index] = -1
                     if "+" in val:
                         self.w[index] = 1
                     if "!" in val:
-                        self.klass.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
+                        self.klass.append(col)
 
-            if "-" not in val and "+" not in val and "!" not in val: #catch the rest and add to x
-                if val[0].isupper(): #check is num
-                    self.x.append(Num(''.join(c for c in val if not c in ['?',':']), index))
-                    self.xnums.append(Num(''.join(c for c in val if not c in ['?',':']), index)) #add the index of the col to the list
-                else: #else add to sym
-                    self.x.append(Sym(''.join(c for c in val if not c in ['?',':']), index))
-                    self.xsyms.append(Sym(''.join(c for c in val if not c in ['?',':']), index)) #add the index of the col to the list
+                if "-" not in val and "+" not in val and "!" not in val:
+                    self.x.append(col)
+                    self.xnums.append(col)
+
 
             index+=1 #increase by one
             self.linesize = index
@@ -293,7 +299,6 @@ class Table:
 
     def insert_row(self, line):
         self.fileline +=1
-        # print("inserting row", self.fileline, "of size", len(line), "expected = ", self.linesize)
         if len(line) != self.linesize:
             print("Line", self.fileline, "has an error")
             return
@@ -312,10 +317,12 @@ class Table:
             else: #otherwise add the skipped row too
                 realindex += 1
             index += 1
-        # print("ADDING ROW:" , line)
         self.rows.append(line)
         self.count += 1
 
+# ------------------------------------------------------------------------------
+# TODO: replace how this prints with new list construction
+# ------------------------------------------------------------------------------
     def dump(self, f):
         f.write("Dump table:"+"\n")
         f.write("table.cols stats info"+"\n")
@@ -334,8 +341,6 @@ class Table:
                 f.write("|  |  name: "+str(col.name)+"\n")
             else:
                 f.write("|  " + str(col.uid) + "\n")
-                # for k, v in col.cnt.items():
-                #     f.write("|  |  |  " + str(k) + ": " + str(v) + "\n")
                 f.write("|  |  col:  "+str(col.uid)+"\n")
                 f.write("|  |  mode: "+str(col.mode)+"\n")
                 f.write("|  |  most: "+str(col.most)+"\n")
@@ -510,7 +515,9 @@ class Table:
         root = TreeNode(left, right, leftTable, rightTable, table, leftNode, rightNode, False, table.header)
         return root
 
-
+# ------------------------------------------------------------------------------
+# TODO: replace how this prints with new list construction
+# ------------------------------------------------------------------------------
     def csvDump(self, f):
         for i, col in enumerate(self.cols):
             if i in self.skip:
@@ -551,26 +558,6 @@ class Table:
         header += "\n"
         return header
 
-    # def clusterlabels(self, list): #for every leaf, given a leaf table
-    #     medians = list
-    #     clabel = None #majority of the x values' class
-    #     xlabel = None
-    #     match = 0
-    #
-    #
-    #     print('length of y:', len(self.rows))
-    #     self.clabels = [clabel for i in range(len(self.rows))]
-    #     print('length of clabels after populating:', len(self.clabels))
-    #     matches = match/(len(self.rows)-1)
-    #     if matches >= 0.8:
-    #         f.write("--------------------------------> Good Cluster Label <--------" +"\n")
-    #     else:
-    #         f.write("Bad Cluster Label" +"\n")
-    #
-    #     percent = "{0:.0%}".format(match/(len(self.rows)-1), 2)
-    #     f.write("Cluster Label: " + str(clabel) +"\n")
-    #     f.write("Label Matches: " + str(match) + "/" + str(len(self.rows)-1)+"\n")
-    #     f.write("Label Matches Percentage: " + str(percent) +"\n")
 
 # ------------------------------------------------------------------------------
 # Tree class
@@ -611,7 +598,7 @@ def small2Big(root,how=None): # for all of the leaves from smallest to largest p
     t = leaf.leftTable
     print(len(t.rows), [col.mid() for col in t.cols])
 
-def sortedleafclusters(root,f,how=None): # for all of the leaves from smallest to largest print len of rows & median
+def sortedleafclusterlabels(root,f,how=None): # for all of the leaves from smallest to largest print len of rows & median
     clabel = None
     xlabel = None
     match = 0
@@ -619,29 +606,23 @@ def sortedleafclusters(root,f,how=None): # for all of the leaves from smallest t
 
     for leaf in sorted(nodes(root), key=how or rowSize):
         counter += 1
-        print("LEAF:", counter)
         t = leaf.leftTable
-        ycol = len(t.cols)-1
-        clabel = t.cols[ycol].mid()
-        print("clabel", clabel)
 
-        # for col in t.cols:
-        #     print("col:", col)
-        #     print("t.y:", t.y)
-        #     if col in t.y:
-        #         clabel = t.col.mid()
-        #         print("clabel col:", str(t.col))
+        clabel = t.y[0].mid()
+        # print("t.y:", str(t.y))
+        # print("t.y mid():", t.y[0].mid())
 
         for row in t.rows:
             if row not in t.skip:
                 xlabel = str(row[len(row)-1])
-                print("xlabel:", str(xlabel))
                 if xlabel == clabel:
                     match += 1
 
         t.clabels = [clabel for i in range(len(t.rows))]
         matches = match/(len(t.rows)-1)
-        if matches >= 0.78:
+
+        f.write("Leaf " + str(counter)+"\n")
+        if matches >= 0.80:
             f.write("--------------------------------> Good Cluster Label <--------" +"\n")
         else:
             f.write("Bad Cluster Label" +"\n")
@@ -650,76 +631,12 @@ def sortedleafclusters(root,f,how=None): # for all of the leaves from smallest t
         f.write("Cluster Label: " + str(clabel) +"\n")
         f.write("Label Matches: " + str(match) + "/" + str(len(t.rows)-1)+"\n")
         f.write("Label Matches Percentage: " + str(percent) +"\n")
+        f.write("---------------------------------------------------------------------------------------------------------------------------------------"+"\n")
+        f.write("---------------------------------------------------------------------------------------------------------------------------------------"+"\n")
 
         match = 0
 
 
-
-
-        # counter +=1
-        # print("LEAF", counter)
-        # t = leaf.leftTable
-        # clabel = t.y[0].mid()
-        # print("y[0]:", str(t.y[0]))
-        # print("mode call:", str(t.y[0].mode))
-        # print("mid function:", str(t.y[0].mid()))
-        # print("clabel:", str(clabel))
-        #
-        # for row in t.rows:
-        #     if row not in t.skip:
-        #         xlabel = str(row[len(row)-1])
-        #         print("xlabel:", str(xlabel))
-        #         if xlabel == clabel:
-        #             match += 1
-        #             print("match:", match)
-        #
-        # print('length of y:', len(t.rows))
-        # t.clabels = [clabel for i in range(len(t.rows))]
-        # print('length of clabels after populating:', len(t.clabels))
-        #
-        # matches = match/(len(t.rows)-1)
-        # print('matches:', matches)
-        # if matches >= 0.8:
-        #     f.write("--------------------------------> Good Cluster Label <--------" +"\n")
-        # else:
-        #     f.write("Bad Cluster Label" +"\n")
-        #
-        # percent = "{0:.0%}".format(match/(len(t.rows)-1), 2)
-        # f.write("Cluster Label: " + str(clabel) +"\n")
-        # f.write("Label Matches: " + str(match) + "/" + str(len(t.rows)-1)+"\n")
-        # f.write("Label Matches Percentage: " + str(percent) +"\n")
-        #
-        # match = 0
-
-    # def breadth_first_search(self, f):
-    #  # """In BFS the Node Values at each level of the Tree are traversed before going to next level"""
-    #     count = 0
-    #     to_visit = []
-    #     to_visit.append(self)
-    #
-    #     while len(to_visit) != 0:
-    #         current = to_visit.pop(0)
-    #         # print("current node:" , str(current.uid))
-    #         if current.leaf:
-    #             count +=1
-    #             # print("leaf # " , str(count))
-    #             f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
-    #             f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
-    #             # f.write("------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n")
-    #             # f.write("Y Dump Leaf Node/Table: " + str(current.uid) + "\n")
-    #             # current.leftTable.ydump(f)
-    #             # f.write("--------------------------------------------------" + "\n")
-    #             # f.write("X Dump Leaf Node/Table: " + str(current.uid) + "\n")
-    #             # current.leftTable.xdump(f)
-    #             # f.write("--------------------------------------------------" + "\n")
-    #             f.write("Leaf Cluster Labels: " + str(current.uid) + "\n")
-    #             current.leftTable.clusterlabels(f)
-    #
-    #         if current.leftNode is not None:
-    #             to_visit.append(current.leftNode)
-    #
-    #         if current.rightNode is not None:
-    #             to_visit.append(current.rightNode)
 
     def dump(self, f):
         #DFS
@@ -843,6 +760,51 @@ def test_rows():
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
+def datasetswitch(csv):
+    dataset = csv
+    filename = dataset[:-4] #cut off the .csv
+
+    print("---------------------------")
+    print("DS:", str(filename))
+    print("---------------------------")
+
+    lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/" + dataset)
+    table = Table(1)
+    table + lines[0]
+    for l in lines[1:]:
+        table + l
+    print("CSV --> Table done ...")
+
+    print("Shuffling rows ...")
+    random.shuffle(table.rows)
+
+    print("Clustering ...")
+    root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
+
+    print("Sorting leaves ...")
+    small2Big(root) #bfs for the leaves gives median row
+
+    print("Comparing cluster labels to ground truths ...")
+    with open( filename + "_BFS.csv", "w") as f:
+        sortedleafclusterlabels(root,f)
+
+
+    print("Performance Metrics ...")
+    # abcd = Abcd(db='randomIn',rx='all')
+    # train = table.clabels
+    # test  = table.y
+
+    # # random.shuffle(test)
+    # for actual, predicted in zip(train,test):
+    #     abcd.tell(actual,predicted)
+    # abcd.header()
+    # abcd.ask()
+
+    print("---------------------------")
+    print("--- completed")
+    print("---------------------------")
+
+
 
 def main():
     # test_num()
@@ -852,75 +814,40 @@ def main():
     # print("All 3 unit tests passed")
     # print("---------------------------")
     # print("---------------------------")
-    # print("Small test case completed: can sort a dataset")
-    # print("---------------------------")
-    # ####### FULL TEST #########
-    # lines = Table.readfile("test.csv")
-    # table = Table(0)
-    # ls = table.linemaker(lines)
-    # for line in ls:
-    #     table + line
-    # print("---------------------------")
-    # print("Testing Code with small fake data: test.csv ")
-    # print("Test Table Cols:", table.cols)
-    # print("Test Table Num Cols Vals:", table.cols[0].vals)
-    # print("Test Table Sym Cols Dictionary:", table.cols[1].count)
-    # print("Test Table Num Cols Mid:", table.cols[0].median)
-    # print("Test Table Sym Cols Mid:", table.cols[1].mode)
-    # print("Test Table Rows:", len(table.rows))
-    # print("Test Table Skips:", len(table.skip))
-    # print("Test Table Goals:", len(table.goals))
-    # print("Test Table Klass:", len(table.klass))
-    # print("Test Table Header:", table.header)
-    # print("Test Table Nums:", len(table.nums))
-    # print("Test Table Syms:", len(table.syms))
-    # print("Test Table xNums:", table.xnums)
-    # print("Test Table xSyms:", table.xsyms) #why is this 2???
-    # ##########################
-    # print("---------------------------")
-    # print("---------------------------")
-    # print("FIRST test completed")
-    # print("---------------------------")
 
-    print("---------------------------")
-    print("DS 1: Diabetes Case:")
-    print("---------------------------")
-
-    lines = Table.readfile("diabetes.csv")
-    table = Table(1)
-    table + lines[0]
-    for l in lines[1:]:
-        table + l
-    print("CSV --> Table done ...")
-    print("---------------------------")
-    print("Printing all attributes ")
-    print(" Table Cols:", table.cols)
-    print(" Table Num Cols Vals:", table.cols[0].vals)
-    print(" Table Num Cols Mid:", table.cols[0].median)
-    print(" Table Rows:", len(table.rows))
-    print(" Table Skips:", len(table.skip))
-    print(" Table Goals:", len(table.goals))
-    print(" Table Klass:", len(table.klass))
-    print(" Table Header:", table.header)
-    print(" Table Nums:", len(table.nums))
-    print(" Table Syms:", len(table.syms))
-    print(" Table xNums:", table.xnums)
-    print(" Table xSyms:", table.xsyms) #why is this 2???
-    ##########################
-    print("Shuffling rows ...")
-    random.shuffle(table.rows)
-    print("Clustering ...")
-    root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    small2Big(root) #bfs for the leaves gives median row
-    with open("diabetes_BFS.csv", "w") as f:
-        sortedleafclusters(root,f)
-    # print("names of nodes:")
-    # names(root)
+    # print("---------------------------")
+    # print("DS 1: Diabetes Case:")
+    # print("---------------------------")
+    #
+    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/diabetes.csv")
+    # table = Table(1)
+    # table + lines[0]
+    # for l in lines[1:]:
+    #     table + l
+    # print("CSV --> Table done ...")
+    # # print("---------------------------")
+    # # print("Printing all attributes ")
+    # # print(" Table Cols:", table.cols)
+    # # print(" Table Num Cols Vals:", table.cols[0].vals)
+    # # print(" Table Num Cols Mid:", table.cols[0].median)
+    # # print(" Table Rows:", len(table.rows))
+    # # print(" Table Skips:", len(table.skip))
+    # # print(" Table Goals:", len(table.goals))
+    # # print(" Table Klass:", len(table.klass))
+    # # print(" Table Header:", table.header)
+    # # print(" Table Nums:", len(table.nums))
+    # # print(" Table Syms:", len(table.syms))
+    # # print(" Table xNums:", table.xnums)
+    # # print(" Table xSyms:", table.xsyms) #why is this 2???
+    # # ##########################
+    # print("Shuffling rows ...")
+    # random.shuffle(table.rows)
     # print("Clustering ...")
-    # with open("diabetes_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
+    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
+    # small2Big(root) #bfs for the leaves gives median row
+    # with open("FR_diabetes_BFS.csv", "w") as f:
+    #     sortedleafclusterlabels(root,f)
 
-    # print("BFS for cluster labels ...")
     # abcd = Abcd(db='randomIn',rx='all')
     # train = table.clabels
     # test  = table.y
@@ -931,203 +858,29 @@ def main():
     #     abcd.tell(actual,predicted)
     # abcd.header()
     # abcd.ask()
+    # print("---------------------------")
+    # print("--- completed")
+    # print("---------------------------")
 
     print("---------------------------")
-    print("--- completed")
+    print("Other Datasets:")
     print("---------------------------")
-    #
-    # print("---------------------------")
-    # print("DS 2: Adult Census Case:")
-    # print("---------------------------")
-    #
-    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/adultscensusincome.csv") #/Users/laurenalvarez/Desktop/mysublime/datasets/adultscensusincome.csv
-    # table = Table(2)
-    # ls = table.linemaker(lines)
-    # table + ls[0]
-    # for l in ls[1:]:
-    #     table + l
-    # print("CSV --> Table done ...")
-    # # print("Printing Raw y-vals ...")
-    # # with open("adultcensusincome_raw_y.csv", "w") as f:
-    # #     table.ydump(f)
-    # print("Shuffling rows ...")
-    # random.shuffle(table.rows)
-    # print("Clustering ...")
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    #
-    # print("BFS for cluster labels ...")
-    # with open("adultcensusincome_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
-    # print("Evaluation ...")
-    # abcd = Abcd(db='randomIn',rx='all')
-    # train = table.clabels
-    # test  = table.y
-    # print("how many cluster labels:", len(table.clabels))
-    # print("how many test/y labels:", len(table.y))
-    # # random.shuffle(test)
-    # for actual, predicted in zip(train,test):
-    #     abcd.tell(actual,predicted)
-    # abcd.header()
-    # # abcd.ask()
-    #
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
+    datasetswitch("diabetes.csv")
+    # datasetswitch("adultscensusincome.csv")
+    # datasetswitch("bankmarketing.csv")
+    # datasetswitch("COMPAS53.csv")
+    # datasetswitch("GermanCredit.csv")
+    # datasetswitch("processed.clevelandhearthealth.csv")
+    # datasetswitch("defaultcredit.csv")
+    # datasetswitch("homecreditapplication_train.csv") # loaded 266113 rows after 2 hours; error on compiling sym/num cols
+
+
 
     # print("---------------------------")
-    # print("DS 3: Banking Case:")
+    # print("DS 7: Home Credit Case:")
     # print("---------------------------")
     #
-    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/bankmarketing.csv")
-    # table = Table(3)
-    # ls = table.linemaker(lines)
-    # table + ls[0]
-    # for l in ls[1:]:
-    #     table + l
-    #
-    # print("Printing Raw y-vals ...")
-    # with open("bankmarketing_raw_y.csv", "w") as f:
-    #     table.ydump(f)
-    #
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    #
-    # print("Clustering ...")
-    # with open("bankmarketing_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
-    #
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
 
-    # print("---------------------------")
-    # print("DS 4: COMPAS Case:") #ERROR NO ROWS
-    # print("---------------------------")
-    #
-    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/compas-scores-two-years.csv")
-    # table = Table(4)
-    # ls = table.linemaker(lines)
-    #
-    # table + ls[0]
-    # print("ls header:", ls[0])
-    # print("header length:", len(ls[0]))
-    # for l in ls[1:]:
-    #     print("adding line:", l, "length", len(l)) #ERROR ADDING THE LINE: inserting row X of size 51 expected =  53
-    #     table + l
-    #
-    # print("first pass table:", table.rows)
-    # # print("Printing Raw y-vals ...")
-    # # with open("compas_raw_y.csv", "w") as f:
-    # #     table.ydump(f)
-    #
-    # print("Clustering ...")
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    #
-    # with open("compas_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
-    #
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
-
-    # print("---------------------------")
-    # print("DS 5: Default Credit Case:")
-    # print("---------------------------")
-    #
-    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/defaultcredit.csv")
-    # table = Table(5)
-    # ls = table.linemaker(lines)
-    # table + ls[0]
-    # for l in ls[1:]:
-    #     table + l
-    #
-    # print("Printing Raw y-vals ...")
-    # with open("defaultcredit_raw_y.csv", "w") as f:
-    #     table.ydump(f)
-    #
-    # print("Clustering ...")
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    #
-    # with open("defaultcredit_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
-    #
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
-
-    # print("---------------------------")
-    # print("DS 6: German Case:")
-    # print("---------------------------")
-    #
-    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/GermanCredit.csv")
-    # table = Table(6)
-    # ls = table.linemaker(lines)
-    # table + ls[0]
-    # for l in ls[1:]:
-    #     table + l
-    #
-    # print("Printing Raw y-vals ...")
-    # with open("GermanCredit_raw_y.csv", "w") as f:
-    #     table.ydump(f)
-    #
-    # print("Clustering ...")
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    #
-    # with open("GermanCredit_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
-    #
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
-    #
-    # print("---------------------------")
-    # print("DS 7: Home Credit Case:") # loaded 266113 rows after 2 hours; error on compiling sym/num cols
-    # print("---------------------------")
-    #
-    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/homecreditapplication_train.csv")
-    # table = Table(7)
-    # ls = table.linemaker(lines)
-    # table + ls[0]
-    # for l in ls[1:]:
-    #     table + l
-    # print("CSV --> Table done ...")
-    # # print("Printing Raw y-vals ...")
-    # # with open("homecredit_raw_y.csv", "w") as f:
-    # #     table.ydump(f)
-    #
-    # print("Clustering ...")
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    # print("BFS for cluster labels ...")
-    # with open("homecredit_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
-    #
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
-    #
-    # print("---------------------------")
-    # print("DS 8: Cleveland Case:")
-    # print("---------------------------")
-    #
-    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/processed.clevelandhearthealth.csv")
-    # table = Table(7)
-    # ls = table.linemaker(lines)
-    # table + ls[0]
-    # for l in ls[1:]:
-    #     table + l
-    #
-    # print("Printing Raw y-vals ...")
-    # with open("cleveland_raw_y.csv", "w") as f:
-    #     table.ydump(f)
-    #
-    # print("Clustering ...")
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    #
-    # with open("cleveland_BFS.csv", "w") as f:
-    #     root.breadth_first_search(f)
-    #
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
 
 
 if __name__ == '__main__':
