@@ -428,22 +428,43 @@ class Table:
 # ------------------------------------------------------------------------------
 # Clustering Fastmap;still in table class (change to it's own class???)
 # ------------------------------------------------------------------------------
-    def split(self, left = None, right = None):#Implements continous space Fastmap for bin chop on data
-        print ("splitting; most distant left point", left)
-        print ("splitting; most distant right point", right)
-    #instead of keeping top cluster, kept the top's left and right points then ask top cluster's left & right what's the most distant point in the local cluster
-        # top = top or self
-        if left == None and right == None:
-            pivot = random.choice(self.rows) #pick a random row
-            #import pdb;pdb.set_trace()
-            left = self.mostDistant(pivot) #get most distant point from the pivot
-            right = self.mostDistant(left) #get most distant point from the leftTable
-        c = self.distance(left,right) #get distance between two points
+    # def wrongsplit(self, left = None, right = None):#Implements continous space Fastmap for bin chop on data
+    #     print ("splitting; most distant left point", left)
+    #     print ("splitting; most distant right point", right)
+    # #instead of keeping top cluster, kept the top's left and right points then ask top cluster's left & right what's the most distant point in the local cluster
+    #     # top = top or self
+    #     if left == None and right == None:
+    #         pivot = random.choice(self.rows) #pick a random row
+    #         #import pdb;pdb.set_trace()
+    #         left = self.mostDistant(pivot) #get most distant point from the pivot
+    #         right = self.mostDistant(left) #get most distant point from the leftTable
+    #     c = self.distance(left,right) #get distance between two points
+    #     items = [[row, 0] for row in self.rows] #make an array for the row & distance but initialize to 0 to start
+    #
+    #     for x in items:
+    #         a = self.distance(x[0], right) # for each row get the distance between that and the farthest point right
+    #         b = self.distance(x[0], left) # for each row get the distance between that and the farthest point left
+    #         x[1] = (a ** 2 + c**2 - b**2)/(2*c + 10e-32) #cosine rule for the distance assign to dist in (row, dist)
+    #
+    #     items.sort(key = lambda x: x[1]) #sort by distance (method sorts the list ascending by default; can have sorting criteria)
+    #     splitpoint = len(items) // 2 #integral divison
+    #     leftItems = self.rows[: splitpoint] #left are the rows to the splitpoint
+    #     rightItems = self.rows[splitpoint :] #right are the rows from the splitpoint onward
+    #
+    #     return [left, right, leftItems, rightItems]
+
+    def split(self, top = None):#Implements continous space Fastmap for bin chop on data
+        top = top or self
+        pivot = random.choice(self.rows) #pick a random row
+        #import pdb;pdb.set_trace()
+        left = top.mostDistant(pivot, self.rows) #get most distant point from the pivot
+        right = top.mostDistant(left, self.rows) #get most distant point from the leftTable
+        c = top.distance(left,right) #get distance between two points
         items = [[row, 0] for row in self.rows] #make an array for the row & distance but initialize to 0 to start
 
         for x in items:
-            a = self.distance(x[0], right) # for each row get the distance between that and the farthest point right
-            b = self.distance(x[0], left) # for each row get the distance between that and the farthest point left
+            a = top.distance(x[0], right) # for each row get the distance between that and the farthest point right
+            b = top.distance(x[0], left) # for each row get the distance between that and the farthest point left
             x[1] = (a ** 2 + c**2 - b**2)/(2*c + 10e-32) #cosine rule for the distance assign to dist in (row, dist)
 
         items.sort(key = lambda x: x[1]) #sort by distance (method sorts the list ascending by default; can have sorting criteria)
@@ -451,7 +472,7 @@ class Table:
         leftItems = self.rows[: splitpoint] #left are the rows to the splitpoint
         rightItems = self.rows[splitpoint :] #right are the rows from the splitpoint onward
 
-        return [left, right, leftItems, rightItems]
+        return [top, left, right, leftItems, rightItems]
 
     def distance(self,rowA, rowB): #distance between two points
         distance = 0
@@ -462,11 +483,11 @@ class Table:
             distance += d #add the distances together
         return distance
 
-    def mostDistant(self, rowA): #find the furthest point from row A
+    def mostDistant(self, rowA, localRows): #find the furthest point from row A
         distance = -tiny
         farthestRow = None # assign to null; python uses None datatype
 
-        for row in self.rows:
+        for row in localRows:
             d = self.distance(rowA, row) #for each of the rows find the distance to row A
             if d > distance: #if it's bigger than the distance
                 distance = d #assign the new distance to be d
@@ -486,8 +507,38 @@ class Table:
         return closestRow #return the close point/row
 
     @staticmethod
-    def clusters(items, table, enough, left = None, right= None, depth = 0):
+    # def wrongclusters(items, table, enough, left = None, right= None, depth = 0):
+    #     print("|.. " * depth,len(table.rows))
+    #     if len(items) < enough: # if/while the length of the less than the stopping criteria #should be changable from command line
+    #         leftTable = Table(0) #make a table w/ uid = 0
+    #         leftTable + table.header # able the table header to the table ; leftTable.header = table.header?
+    #         for item in items: #add all the items to the table
+    #             leftTable + item
+    #         return TreeNode(None, None, leftTable, None, table, None, None, True, table.header) #make a leaf treenode when the cluster have enough rows in them
+    #     #if you don't enough items
+    #     if left != None and right != None:
+    #         _, _, leftItems, rightItems = table.split(left, right) #fastmap bin split on the table
+    #     else:
+    #         left, right, leftItems, rightItems = table.split(left, right)
+    #
+    #     leftTable = Table(0)
+    #     leftTable + table.header
+    #     for item in leftItems:
+    #         leftTable + item
+    #
+    #     rightTable = Table(0)
+    #     rightTable + table.header
+    #     for item in rightItems:
+    #         rightTable + item
+    #     # print(rightTable.rows)
+    #     leftNode = Table.clusters(leftItems, leftTable, enough, left, right, depth = depth+1)
+    #     rightNode = Table.clusters(rightItems, rightTable, enough, left, right, depth = depth+1)
+    #     root = TreeNode(left, right, leftTable, rightTable, table, leftNode, rightNode, False, table.header)
+    #     return root
+
+    def clusters(items, table, enough, top = None, depth = 0):
         print("|.. " * depth,len(table.rows))
+        print("top cluster:", top)
         if len(items) < enough: # if/while the length of the less than the stopping criteria #should be changable from command line
             leftTable = Table(0) #make a table w/ uid = 0
             leftTable + table.header # able the table header to the table ; leftTable.header = table.header?
@@ -495,10 +546,10 @@ class Table:
                 leftTable + item
             return TreeNode(None, None, leftTable, None, table, None, None, True, table.header) #make a leaf treenode when the cluster have enough rows in them
         #if you don't enough items
-        if left != None and right != None:
-            _, _, leftItems, rightItems = table.split(left, right) #fastmap bin split on the table
+        if top != None:
+            _, left, right, leftItems, rightItems = table.split(top)
         else:
-            left, right, leftItems, rightItems = table.split(left, right)
+            top, left, right, leftItems, rightItems = table.split(top)
 
         leftTable = Table(0)
         leftTable + table.header
@@ -510,10 +561,13 @@ class Table:
         for item in rightItems:
             rightTable + item
         # print(rightTable.rows)
-        leftNode = Table.clusters(leftItems, leftTable, enough, left, right, depth = depth+1)
-        rightNode = Table.clusters(rightItems, rightTable, enough, left, right, depth = depth+1)
+        leftNode = Table.clusters(leftItems, leftTable, enough, top, depth = depth+1)
+        rightNode = Table.clusters(rightItems, rightTable, enough, top, depth = depth+1)
         root = TreeNode(left, right, leftTable, rightTable, table, leftNode, rightNode, False, table.header)
         return root
+
+
+
 
 # ------------------------------------------------------------------------------
 # TODO: replace how this prints with new list construction
@@ -780,6 +834,7 @@ def datasetswitch(csv):
 
     print("Clustering ...")
     root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
+    print("root:", root.currentTable)
 
     print("Sorting leaves ...")
     small2Big(root) #bfs for the leaves gives median row
