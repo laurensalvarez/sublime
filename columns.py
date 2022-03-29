@@ -204,11 +204,10 @@ class Table:
                 return str(x)
 
 
-    def fillblanks(line):
-        linenoblanks = ""
+    # def fillblanks(line):
+    #     linenoblanks = ""
+    #     return linenoblanks
 
-
-        return linenoblanks
     @staticmethod
     def readfile(file, sep= ",", doomed= r'([\n\t\r ]|#.*)'): #reads in file
         datalines = []
@@ -292,7 +291,6 @@ class Table:
                     self.x.append(col)
                     self.xnums.append(col)
 
-
             index+=1 #increase by one
             self.linesize = index
             self.fileline += 1
@@ -323,114 +321,116 @@ class Table:
 # ------------------------------------------------------------------------------
 # TODO: replace how this prints with new list construction
 # ------------------------------------------------------------------------------
-    def dump(self, f):
-        f.write("Dump table:"+"\n")
-        f.write("table.cols stats info"+"\n")
-        for i, col in enumerate(self.cols):
-            if i in self.skip:
-                continue
-            if i in self.nums:
-                f.write("|  " + "we're looking at col #" +str(col.uid)+"\n")
-                f.write("|  |  col:  "+str(col.uid)+"\n")
-                f.write("|  |  hi:   "+str(col.hi)+"\n")
-                f.write("|  |  lo:   "+str(col.lo)+"\n")
-                f.write("|  |  m2:   "+str(col.m2)+"\n")
-                f.write("|  |  mu:   "+str(col.mu)+"\n")
-                f.write("|  |  n:    "+str(col.n)+"\n")
-                f.write("|  |  sd:   "+str(col.sd)+"\n")
-                f.write("|  |  name: "+str(col.name)+"\n")
-            else:
-                f.write("|  " + str(col.uid) + "\n")
-                f.write("|  |  col:  "+str(col.uid)+"\n")
-                f.write("|  |  mode: "+str(col.mode)+"\n")
-                f.write("|  |  most: "+str(col.most)+"\n")
-                f.write("|  |  n:    " + str(col.n) + "\n")
-                f.write("|  |  name: " + str(col.name) + "\n")
-
-        f.write("table x & y info: "+"\n")
-        f.write("|  len(cols): " + str(len(self.cols))+"\n")
-        f.write("|  y" + "\n")
-        for v in self.y:
-            if v not in self.skip:
-                f.write("|  |  " + str(v) + "\n")
-        f.write("|  nums" + "\n")
-        for v in self.nums:
-            if v not in self.skip:
-                f.write("|  |  " + str(v) + "\n")
-        f.write("|  syms" + "\n")
-        for v in self.syms:
-            if v not in self.skip:
-                f.write("|  |  " + str(v) + "\n")
-        f.write("|  w" + "\n")
-        for k, v in self.w.items():
-            if v not in self.skip:
-                f.write("|  |  " + str(k) + ": "+str(v)+"\n")
-        f.write("|  x" + "\n")
-        for v in self.x:
-            if v not in self.skip:
-                f.write("|  |  " + str(v) + "\n")
-        f.write("|  xnums" + "\n")
-        for v in self.xnums:
-            if v not in self.skip:
-                f.write("|  |  " + str(v) + "\n")
-        f.write("|  xsyms" + "\n")
-        for v in self.xsyms:
-            if v not in self.skip:
-                f.write("|  |  " + str(v) + "\n")
-
-    def ydump(self, f):
-        f.write("how many table cols: " + str(len(self.cols))+"\n")
-        f.write("leaf table's y col info: "+"\n")
-        for v in self.y:
-            if v not in self.skip:
-                f.write("y index: " + str(v) + "\n")
-        for i, col in enumerate(self.cols):
-            if i in self.y:
-                if i in self.skip:
-                    continue
-                if i in self.nums:
-                    f.write("|  " + "we're looking at NUM col id #" +str(col.uid)+"\n")
-                    f.write("|  " + "we're looking at y index" +str(i)+"\n")
-                    f.write("|  |  n:    "+str(col.n)+"\n")
-                    f.write("|  |  median:    "+str(col.median)+"\n")
-                    f.write("|  |  col:  "+str(col.vals)+"\n")
-                    f.write("|  |  name: "+str(col.name)+"\n")
-                else:
-                    f.write("| SYM col id # " + str(col.uid) + "\n")
-                    f.write("|  |  mode: "+str(col.mode)+"\n")
-                    f.write("|  |  most: "+str(col.most)+"\n")
-                    for k, v in col.count.items():
-                        f.write("|  |  SYM Key : Value --> " + str(k) + ": " + str(v) + "\n")
-    def xdump(self, f):
-        f.write("how many table cols: " + str(len(self.cols))+"\n")
-        f.write("leaf table's x col info: "+"\n")
-        f.write("x indexes: " + str(len(self.x)) + "\n")
-        for v in self.rows:
-            if v not in self.skip:
-                f.write("row class: " + str(v[len(v)-1]) + "\n")
-        for i, col in enumerate(self.cols):
-            if i in self.x:
-                if i in self.skip:
-                    continue
-                if i in self.nums:
-                    f.write("|  " + "we're looking at NUM col id #" +str(col.uid)+"\n")
-                    # f.write("|  |  n:    "+str(col.n)+"\n")
-                    f.write("|  |  median:    "+str(col.median)+"\n")
-                    # f.write("|  |  col:  "+str(col.vals)+"\n")
-                    f.write("|  |  name: "+str(col.name)+"\n")
-                else:
-                    f.write("| SYM col id # " + str(col.uid) + "\n")
-                    f.write("|  |  mode: "+str(col.mode)+"\n")
-                    f.write("|  |  most: "+str(col.most)+"\n")
-                    f.write("|  |  name: "+str(col.name)+"\n")
-                    for k, v in col.count.items():
-                        f.write("|  |  SYM Key : Value --> " + str(k) + ": " + str(v) + "\n")
+    # def dump(self, f):
+    #     f.write("Dump table:"+"\n")
+    #     f.write("table.cols stats info"+"\n")
+    #     for i, col in enumerate(self.cols):
+    #         if i in self.skip:
+    #             continue
+    #         if i in self.nums:
+    #             f.write("|  " + "we're looking at col #" +str(col.uid)+"\n")
+    #             f.write("|  |  col:  "+str(col.uid)+"\n")
+    #             f.write("|  |  hi:   "+str(col.hi)+"\n")
+    #             f.write("|  |  lo:   "+str(col.lo)+"\n")
+    #             f.write("|  |  m2:   "+str(col.m2)+"\n")
+    #             f.write("|  |  mu:   "+str(col.mu)+"\n")
+    #             f.write("|  |  n:    "+str(col.n)+"\n")
+    #             f.write("|  |  sd:   "+str(col.sd)+"\n")
+    #             f.write("|  |  name: "+str(col.name)+"\n")
+    #         else:
+    #             f.write("|  " + str(col.uid) + "\n")
+    #             f.write("|  |  col:  "+str(col.uid)+"\n")
+    #             f.write("|  |  mode: "+str(col.mode)+"\n")
+    #             f.write("|  |  most: "+str(col.most)+"\n")
+    #             f.write("|  |  n:    " + str(col.n) + "\n")
+    #             f.write("|  |  name: " + str(col.name) + "\n")
+    #
+    #     f.write("table x & y info: "+"\n")
+    #     f.write("|  len(cols): " + str(len(self.cols))+"\n")
+    #     f.write("|  y" + "\n")
+    #     for v in self.y:
+    #         if v not in self.skip:
+    #             f.write("|  |  " + str(v) + "\n")
+    #     f.write("|  nums" + "\n")
+    #     for v in self.nums:
+    #         if v not in self.skip:
+    #             f.write("|  |  " + str(v) + "\n")
+    #     f.write("|  syms" + "\n")
+    #     for v in self.syms:
+    #         if v not in self.skip:
+    #             f.write("|  |  " + str(v) + "\n")
+    #     f.write("|  w" + "\n")
+    #     for k, v in self.w.items():
+    #         if v not in self.skip:
+    #             f.write("|  |  " + str(k) + ": "+str(v)+"\n")
+    #     f.write("|  x" + "\n")
+    #     for v in self.x:
+    #         if v not in self.skip:
+    #             f.write("|  |  " + str(v) + "\n")
+    #     f.write("|  xnums" + "\n")
+    #     for v in self.xnums:
+    #         if v not in self.skip:
+    #             f.write("|  |  " + str(v) + "\n")
+    #     f.write("|  xsyms" + "\n")
+    #     for v in self.xsyms:
+    #         if v not in self.skip:
+    #             f.write("|  |  " + str(v) + "\n")
+    #
+    # def ydump(self, f):
+    #     f.write("how many table cols: " + str(len(self.cols))+"\n")
+    #     f.write("leaf table's y col info: "+"\n")
+    #     for v in self.y:
+    #         if v not in self.skip:
+    #             f.write("y index: " + str(v) + "\n")
+    #     for i, col in enumerate(self.cols):
+    #         if i in self.y:
+    #             if i in self.skip:
+    #                 continue
+    #             if i in self.nums:
+    #                 f.write("|  " + "we're looking at NUM col id #" +str(col.uid)+"\n")
+    #                 f.write("|  " + "we're looking at y index" +str(i)+"\n")
+    #                 f.write("|  |  n:    "+str(col.n)+"\n")
+    #                 f.write("|  |  median:    "+str(col.median)+"\n")
+    #                 f.write("|  |  col:  "+str(col.vals)+"\n")
+    #                 f.write("|  |  name: "+str(col.name)+"\n")
+    #             else:
+    #                 f.write("| SYM col id # " + str(col.uid) + "\n")
+    #                 f.write("|  |  mode: "+str(col.mode)+"\n")
+    #                 f.write("|  |  most: "+str(col.most)+"\n")
+    #                 for k, v in col.count.items():
+    #                     f.write("|  |  SYM Key : Value --> " + str(k) + ": " + str(v) + "\n")
+    # def xdump(self, f):
+    #     f.write("how many table cols: " + str(len(self.cols))+"\n")
+    #     f.write("leaf table's x col info: "+"\n")
+    #     f.write("x indexes: " + str(len(self.x)) + "\n")
+    #     for v in self.rows:
+    #         if v not in self.skip:
+    #             f.write("row class: " + str(v[len(v)-1]) + "\n")
+    #     for i, col in enumerate(self.cols):
+    #         if i in self.x:
+    #             if i in self.skip:
+    #                 continue
+    #             if i in self.nums:
+    #                 f.write("|  " + "we're looking at NUM col id #" +str(col.uid)+"\n")
+    #                 # f.write("|  |  n:    "+str(col.n)+"\n")
+    #                 f.write("|  |  median:    "+str(col.median)+"\n")
+    #                 # f.write("|  |  col:  "+str(col.vals)+"\n")
+    #                 f.write("|  |  name: "+str(col.name)+"\n")
+    #             else:
+    #                 f.write("| SYM col id # " + str(col.uid) + "\n")
+    #                 f.write("|  |  mode: "+str(col.mode)+"\n")
+    #                 f.write("|  |  most: "+str(col.most)+"\n")
+    #                 f.write("|  |  name: "+str(col.name)+"\n")
+    #                 for k, v in col.count.items():
+    #                     f.write("|  |  SYM Key : Value --> " + str(k) + ": " + str(v) + "\n")
 
 
 # ------------------------------------------------------------------------------
 # Clustering Fastmap;still in table class (change to it's own class???)
 # ------------------------------------------------------------------------------
     def split(self, left = None, right = None):#Implements continous space Fastmap for bin chop on data
+        print ("splitting; most distant left point", left)
+        print ("splitting; most distant right point", right)
     #instead of keeping top cluster, kept the top's left and right points then ask top cluster's left & right what's the most distant point in the local cluster
         # top = top or self
         if left == None and right == None:
@@ -816,7 +816,7 @@ def main():
     # print("---------------------------")
 
     # print("---------------------------")
-    # print("DS 1: Diabetes Case:")
+    # print("Testing Run:")
     # print("---------------------------")
     #
     # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/diabetes.csv")
@@ -858,13 +858,14 @@ def main():
     #     abcd.tell(actual,predicted)
     # abcd.header()
     # abcd.ask()
-    # print("---------------------------")
+    # print("---------------------------------------------------------------------------------------------------------------------------------------")
     # print("--- completed")
-    # print("---------------------------")
+    # print("---------------------------------------------------------------------------------------------------------------------------------------")
 
-    print("---------------------------")
+    print("---------------------------------------------------------------------------------------------------------------------------------------")
     print("Other Datasets:")
-    print("---------------------------")
+    print("---------------------------------------------------------------------------------------------------------------------------------------")
+    random.seed(10019)
     datasetswitch("diabetes.csv")
     # datasetswitch("adultscensusincome.csv")
     # datasetswitch("bankmarketing.csv")
@@ -873,14 +874,6 @@ def main():
     # datasetswitch("processed.clevelandhearthealth.csv")
     # datasetswitch("defaultcredit.csv")
     # datasetswitch("homecreditapplication_train.csv") # loaded 266113 rows after 2 hours; error on compiling sym/num cols
-
-
-
-    # print("---------------------------")
-    # print("DS 7: Home Credit Case:")
-    # print("---------------------------")
-    #
-
 
 
 if __name__ == '__main__':
