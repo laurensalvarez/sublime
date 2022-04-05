@@ -84,8 +84,6 @@ class Sym(Col):
         return self.mode
 
     def dist(self, x, y): #Aha's distance between two syms
-        # print("Aha's SYM ...x", x)
-        # print("Aha's SYM ...y", y)
         if (x == "?" or x == "") or (y == "?" or y == ""): #check if the empty is just a bug
             return 1
         return 0 if x == y else 1
@@ -108,8 +106,6 @@ class Num(Col):
         self.vals = []
         self.uid = uid
         self.median = 0
-        # self.encodeddict= defaultdict(int)
-        # self.encodedvals = []
         if data != None:
             for val in data:
                 self + val #calls __add__
@@ -118,12 +114,6 @@ class Num(Col):
         #add the column; calculate the new lo/hi, get the sd using the 'chasing the mean'
         self.n += 1
         self.vals.append(v) #add value to a list
-
-        # unique_symlist = list(set(self.vals))
-        # self.encodeddict = dict(zip(unique_symlist, range(len(unique_symlist))))
-        # ev = self.encodeddict.get(v)
-        # self.encodedvals.append(ev)
-
         try:
             if v < self.lo: #if the val is < the lowest; reassign
                 self.lo = v
@@ -234,10 +224,6 @@ class Table:
             except ValueError:
                 return str(x)
 
-
-    # def fillblanks(line):
-    #     linenoblanks = ""
-    #     return linenoblanks
 
     @staticmethod
     def readfile(file, sep= ",", doomed= r'([\n\t\r"\' ]|#.*)'): #reads in file
@@ -358,9 +344,7 @@ class Table:
         self.encodedrows.append(encodedline)
         self.count += 1
 
-# ------------------------------------------------------------------------------
-# TODO: replace info dumps this prints with new list construction
-# ------------------------------------------------------------------------------
+
 
 # ------------------------------------------------------------------------------
 # Clustering Fastmap;still in table class (change to it's own class???)
@@ -454,51 +438,6 @@ class Table:
         rightNode = Table.clusters(rightItems, rightTable, enough, top, depth = depth+1)
         root = TreeNode(left, right, leftTable, rightTable, table, leftNode, rightNode, False, table.header)
         return root
-
-
-# ------------------------------------------------------------------------------
-# TODO: replace how this prints with new list construction
-# ------------------------------------------------------------------------------
-    def csvDump(self, f):
-        for i, col in enumerate(self.cols):
-            if i in self.skip:
-                continue
-            if i in self.nums:
-                f.write(str(col.uid) + ",")
-                f.write(str(col.hi)+",")
-                f.write(str(col.lo)+",")
-                f.write(str(col.m2)+",")
-                f.write(str(col.mu)+",")
-                f.write(str(col.n)+",")
-                f.write(str(col.sd)+",")
-            else:
-                f.write(str(col.uid)+",")
-                f.write(str(col.mode)+",")
-                f.write(str(col.most)+",")
-                f.write(str(col.n) + ",")
-        f.write("\n")
-
-    def csvHeader(self):
-        header = ""
-        for i, col in enumerate(self.cols):
-            if i in self.skip:
-                continue
-            if i in self.nums:
-                header += (str(col.name)+"_uid,")
-                header += (str(col.name)+"_hi,")
-                header += (str(col.name)+"_lo,")
-                header += (str(col.name)+"_m2,")
-                header += (str(col.name)+"_mu,")
-                header += (str(col.name)+"_n,")
-                header += (str(col.name)+"_sd,")
-            else:
-                header += (str(col.name)+"_uid,")
-                header += (str(col.name)+"_mode,")
-                header += (str(col.name)+"_most,")
-                header += (str(col.name)+"_n,")
-        header += "\n"
-        return header
-
 
 # ------------------------------------------------------------------------------
 # Tree class
@@ -767,18 +706,7 @@ def datasetswitch(csv):
 
     print("Encode Sym Values ...")
 
-    # encodeSyms(table)
-    # for col in table.syms:
-    #     print("encoded vals:", col.encodedvals)
-
-    # for col in table.syms:
-    #     print("col.uid", col.name)
-    #     for keys,values in col.encodeddict.items():
-    #         print("keys: ", keys, "values: ",values )
-
     print("Whole Data Classification...")
-    # print("x & y types", type(table.rows), type(table.y[0]))
-    # print("x & y length", len(table.rows), len(table.y[0].vals))
 
     print ("are they encoded:", table.y[0].encodedvals)
     print ("OG row :", table.rows[0:3])
@@ -831,39 +759,6 @@ def main():
     # print("All 3 unit tests passed")
     # print("---------------------------")
     # print("---------------------------")
-
-    # print("---------------------------")
-    # print("Testing Run:")
-    # print("---------------------------")
-    #
-    # lines = Table.readfile("/Users/laurenalvarez/Desktop/mysublime/datasets/diabetes.csv")
-    # table = Table(1)
-    # table + lines[0]
-    # for l in lines[1:]:
-    #     table + l
-    # print("CSV --> Table done ...")
-    # # print("---------------------------")
-    # # print("Printing all attributes ")
-    # # print(" Table Cols:", table.cols)
-    # # print(" Table Num Cols Vals:", table.cols[0].vals)
-    # # print(" Table Num Cols Mid:", table.cols[0].median)
-    # # print(" Table Rows:", len(table.rows))
-    # # print(" Table Skips:", len(table.skip))
-    # # print(" Table Goals:", len(table.goals))
-    # # print(" Table Klass:", len(table.klass))
-    # # print(" Table Header:", table.header)
-    # # print(" Table Nums:", len(table.nums))
-    # # print(" Table Syms:", len(table.syms))
-    # # print(" Table xNums:", table.xnums)
-    # # print(" Table xSyms:", table.xsyms) #why is this 2???
-    # # ##########################
-    # print("Shuffling rows ...")
-    # random.shuffle(table.rows)
-    # print("Clustering ...")
-    # root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
-    # small2Big(root) #bfs for the leaves gives median row
-    # with open("FR_diabetes_BFS.csv", "w") as f:
-    #     sortedleafclusterlabels(root,f)
 
     # abcd = Abcd(db='randomIn',rx='all')
     # train = table.clabels
