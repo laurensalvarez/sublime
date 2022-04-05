@@ -43,6 +43,9 @@ class Sym(Col):
         self.mode = ""
         self.uid = Col.id(self) #uid --> it allows for permanence and recalling necessary subtables
         self.count = defaultdict(int) #will never throw a key error bc it will guve default value as missing key
+        self.encodeddict= defaultdict(int)
+        self.encodedvals = []
+        self.vals = []
         if data != None: #initializes the empty col with val
             for val in data:
                 self + val #calls __add__
@@ -54,6 +57,13 @@ class Sym(Col):
 
     def add (self, v, inc=1): #want to be able to control the increments
         self.n += inc # add value to the count
+        self.vals.append(v)
+
+        unique_symlist = list(set(self.vals))
+        self.encodeddict = dict(zip(unique_symlist, range(len(unique_symlist))))
+        ev = self.encodeddict.get(v)
+        self.encodedvals.append(ev)
+
         self.count[v] += inc # add value to the dictionary with count +1
         tmp = self.count[v]
         if tmp > self.most: #check which is the most seen; if it's the most then assign and update mode
@@ -98,6 +108,8 @@ class Num(Col):
         self.vals = []
         self.uid = uid
         self.median = 0
+        # self.encodeddict= defaultdict(int)
+        # self.encodedvals = []
         if data != None:
             for val in data:
                 self + val #calls __add__
@@ -106,6 +118,12 @@ class Num(Col):
         #add the column; calculate the new lo/hi, get the sd using the 'chasing the mean'
         self.n += 1
         self.vals.append(v) #add value to a list
+
+        # unique_symlist = list(set(self.vals))
+        # self.encodeddict = dict(zip(unique_symlist, range(len(unique_symlist))))
+        # ev = self.encodeddict.get(v)
+        # self.encodedvals.append(ev)
+
         try:
             if v < self.lo: #if the val is < the lowest; reassign
                 self.lo = v
@@ -117,7 +135,7 @@ class Num(Col):
             self.sd = self._numSd() #
             self.median = self.mid()
         except:
-            print("failed col name:", self.name, self.uid)
+            print("failed col name:", self.name, "id:" , self.uid)
         return v
 
     def _numSd(self):
@@ -140,7 +158,7 @@ class Num(Col):
         self.vals.sort()
         # print("listLen:", listLen)
         if listLen == 0:
-            print("ERROR: empty self.vals no median to calculate")
+            # print("ERROR: empty self.vals no median to calculate")
             # print("self.vals:", self.vals)
             self.median = 0
             return self.median
@@ -184,6 +202,7 @@ class Table:
         self.count = 0
         self.cols = []
         self.rows = []
+        self.encodedrows = []
         self.fileline = 0
         self.linesize = 0
         self.skip = []
@@ -198,6 +217,7 @@ class Table:
         self.xsyms = [] #sym x points
         self.header = ""
         self.clabels = []
+        self.encodemap = defaultdict(int)
 
 # ------------------------------------------------------------------------------
 # Table Class: Helper Functions
@@ -268,6 +288,7 @@ class Table:
                 col = Num(''.join(c for c in val if not c in ['?',':']), index)
                 self.nums.append(col)
                 self.cols.append(col)
+                # self.encodemap[index] = col.encodeddict
 
                 if "!" in val or "-" in val or "+" in val: #is it a klass, or goal (goals are y)
                     self.y.append(col)
@@ -287,6 +308,7 @@ class Table:
                 col = Sym(''.join(c for c in val if not c in ['?',':']), index)
                 self.syms.append(col)
                 self.cols.append(col)
+                self.encodemap[index] = col.encodeddict
 
                 if "!" in val or "-" in val or "+" in val: #is it a klass, or goal (goals are y)
                     self.y.append(col)
@@ -306,27 +328,34 @@ class Table:
             self.linesize = index
             self.fileline += 1
 
+
     def insert_row(self, line):
         self.fileline +=1
         if len(line) != self.linesize:
             print("Line", self.fileline, "has an error")
             return
+
         realline = []
-        realindex = 0
+        encodedline = []
         index = 0
+
         for val in line:
             if index not in self.skip: #check if it needs to be skipped
                 if val == "?" or val == "":
-                    realline.append(val) #add to realline index
-                    realindex += 1
+                    realline.append(val) #add to realline
+                    encodedline.append(val)
+                    index += 1
                     continue
-                self.cols[realindex] + self.compiler(val)
+                self.cols[index] + self.compiler(val)
                 realline.append(val)
-                realindex += 1
-            else: #otherwise add the skipped row too
-                realindex += 1
+                encodedline.append(val)
+                if isinstance(val, str):
+                    eval = self.cols[index].encodeddict.get(val)
+                    encodedline[index] = eval
             index += 1
-        self.rows.append(line)
+
+        self.rows.append(realline)
+        self.encodedrows.append(encodedline)
         self.count += 1
 
 # ------------------------------------------------------------------------------
@@ -363,8 +392,10 @@ class Table:
         distance = 0
         if len(rowA) != len(rowB): #catch if they can't be compared?? why??
             return -big
-        for i, (a,b) in enumerate(zip(rowA, rowB)):#to iterate through an interable: an get the index with enumerate(), and get the elements of multiple iterables with zip()
-            d = self.cols[i].dist(self.compiler(a),self.compiler(b)) #distance of both rows in each of the columns; compile the a & b bc it's in a text format
+        # for i, (a,b) in enumerate(zip(rowA, rowB)):#to iterate through an interable: an get the index with enumerate(), and get the elements of multiple iterables with zip()
+        for col in self.cols: #to include y self.cols ; for just x vals self.x
+            i = col.uid
+            d = self.cols[i].dist(self.compiler(rowA[i]),self.compiler(rowB[i])) #distance of both rows in each of the columns; compile the a & b bc it's in a text format
             distance += d #add the distances together
         return distance
 
@@ -423,8 +454,6 @@ class Table:
         rightNode = Table.clusters(rightItems, rightTable, enough, top, depth = depth+1)
         root = TreeNode(left, right, leftTable, rightTable, table, leftNode, rightNode, False, table.header)
         return root
-
-
 
 
 # ------------------------------------------------------------------------------
@@ -492,7 +521,7 @@ class TreeNode:
 # TreeNode Class Helper Fuctions: Functional Tree Traversal
 # ------------------------------------------------------------------------------
 
-def nodes(root): # gets all the  nodes
+def nodes(root): # gets all the leaf nodes
     if root:
         for node in nodes(root.leftNode): yield node #yield returns from a function without destroying it
         if root.leaf:  yield root
@@ -506,9 +535,18 @@ def names(root:TreeNode): #gets all the col names of the node
 def rowSize(t): return len(t.leftTable.rows) #gets the size of the rows
 
 def small2Big(root,how=None): # for all of the leaves from smallest to largest print len of rows & median
-  for leaf in sorted(nodes(root), key=how or rowSize):
-    t = leaf.leftTable
-    print(len(t.rows), [col.mid() for col in t.cols], t.cols[-1].count)
+    for leaf in sorted(nodes(root), key=how or rowSize):
+        t = leaf.leftTable
+        print(len(t.rows), [col.mid() for col in t.cols], t.cols[-1].count)
+
+def getLeafData(root,how=None): # for all of the leaves from smallest to largest print len of rows & median
+    EDT = Table(5)
+    for leaf in sorted(nodes(root), key=how or rowSize):
+        t = leaf.leftTable
+        EDT + t.header
+        EDT + random.choice(t.rows)
+    return EDT
+
 
 def sortedleafclusterlabels(root,f,how=None): # for all of the leaves from smallest to largest print len of rows & median
     clabel = None
@@ -576,6 +614,15 @@ def sortedleafclusterlabels(root,f,how=None): # for all of the leaves from small
 
         if self.rightNode is not None:
             self.rightNode.csvDump(f)
+
+
+def isValid(self, row):
+    for val in row:
+        if val == '?'
+        return 0
+    return 1
+
+
 
 # ------------------------------------------------------------------------------
 # Evaluation Metrics
@@ -671,9 +718,34 @@ def test_rows():
     assert 101 == num_rows, "counting rows"
 
 
+
+# ------------------------------------------------------------------------------
+# Classifier
+# ------------------------------------------------------------------------------
+# Standard scientific Python imports
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn import preprocessing
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.ensemble import RandomForestClassifier
+
+def classify(X, y):
+    # split data 80% train 20 % test with 10 n folds
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
+    # create svm
+    svclassifier = SVC(kernel='linear')
+    clf = RandomForestClassifier(random_state=0)
+    svclassifier.fit(X_train, y_train)
+    # predict
+    y_pred = svclassifier.predict(X_test)
+    # evaluation
+    print(confusion_matrix(y_test,y_pred))
+    print(classification_report(y_test,y_pred))
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
+
 def datasetswitch(csv):
     dataset = csv
     filename = dataset[:-4] #cut off the .csv
@@ -682,6 +754,7 @@ def datasetswitch(csv):
     print("DS:", str(filename))
     print("---------------------------")
 
+    # encodeddict= defaultdict(int)
     lines = Table.readfile(r'./datasets/' + dataset)
     table = Table(1)
     table + lines[0]
@@ -689,8 +762,31 @@ def datasetswitch(csv):
         table + l
     print("CSV --> Table done ...")
 
-    print("Shuffling rows ...")
-    random.shuffle(table.rows)
+    # print("Shuffling rows ...")
+    # random.shuffle(table.rows)
+
+    print("Encode Sym Values ...")
+
+    # encodeSyms(table)
+    # for col in table.syms:
+    #     print("encoded vals:", col.encodedvals)
+
+    # for col in table.syms:
+    #     print("col.uid", col.name)
+    #     for keys,values in col.encodeddict.items():
+    #         print("keys: ", keys, "values: ",values )
+
+    print("Whole Data Classification...")
+    # print("x & y types", type(table.rows), type(table.y[0]))
+    # print("x & y length", len(table.rows), len(table.y[0].vals))
+
+    print ("are they encoded:", table.y[0].encodedvals)
+    print ("OG row :", table.rows[0:3])
+    print ("row encoded:", table.encodedrows[0:3])
+    # sys.exit()
+    classify(table.encodedrows, table.y[0].encodedvals)
+    sys.exit()
+
 
     print("Clustering ...")
     root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
@@ -698,9 +794,14 @@ def datasetswitch(csv):
     print("Sorting leaves ...")
     small2Big(root) #bfs for the leaves gives median row
 
-    print("Comparing cluster labels to ground truths ...")
-    with open( filename + "_BFS.csv", "w") as f:
-        sortedleafclusterlabels(root,f)
+    EDT = getLeafData(root) #get one random point from leaves
+
+    print("Extrapolated Data Classification...")
+    classify(EDT.rows, EDT.y[0].encodedvals)
+
+    # print("Comparing cluster labels to ground truths ...")
+    # with open( filename + "_BFS.csv", "w") as f:
+    #     sortedleafclusterlabels(root,f)
 
 
     print("Performance Metrics ...")
@@ -717,6 +818,8 @@ def datasetswitch(csv):
     print("---------------------------")
     print("--- completed")
     print("---------------------------")
+
+
 
 
 
@@ -783,7 +886,7 @@ def main():
     # datasetswitch("diabetes.csv") #clusters
     # datasetswitch("adultscensusincome.csv") #clusters
     # datasetswitch("bankmarketing.csv") #clusters
-    # datasetswitch("COMPAS53.csv") #problem with empty cols?
+    datasetswitch("COMPAS53.csv") #problem with empty cols?
     # datasetswitch("GermanCredit.csv") #clusters
     # datasetswitch("processed.clevelandhearthealth.csv") #clusters
     # datasetswitch("defaultcredit.csv") #clusters
