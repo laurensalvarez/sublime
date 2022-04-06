@@ -1,4 +1,5 @@
 from collections import defaultdict
+from sklearn import preprocessing
 import math
 import re
 import random
@@ -45,6 +46,8 @@ class Sym(Col):
         self.count = defaultdict(int) #will never throw a key error bc it will guve default value as missing key
         self.encodeddict= defaultdict(int)
         self.encodedvals = []
+        self.encoder = preprocessing.LabelEncoder()
+        self.coltype = 0
         self.vals = []
         if data != None: #initializes the empty col with val
             for val in data:
@@ -106,6 +109,7 @@ class Num(Col):
         self.vals = []
         self.uid = uid
         self.median = 0
+        self.coltype = 1
         if data != None:
             for val in data:
                 self + val #calls __add__
@@ -318,33 +322,57 @@ class Table:
     def insert_row(self, line):
         self.fileline +=1
         if len(line) != self.linesize:
+            print("len(line)" , len(line), "self.linesize", self.linesize)
             print("Line", self.fileline, "has an error")
             return
+        if isValid(self, line):
+            realline = []
+            encodedline = []
+            index = 0
 
-        realline = []
-        encodedline = []
-        index = 0
-
-        for val in line:
-            if index not in self.skip: #check if it needs to be skipped
-                if val == "?" or val == "":
-                    realline.append(val) #add to realline
+            for val in line:
+                if index not in self.skip: #check if it needs to be skipped
+                    if val == "?" or val == "":
+                        realline.append(val) #add to realline
+                        encodedline.append(val)
+                        index += 1
+                        continue
+                    self.cols[index] + self.compiler(val)
+                    realline.append(val)
                     encodedline.append(val)
-                    index += 1
-                    continue
-                self.cols[index] + self.compiler(val)
-                realline.append(val)
-                encodedline.append(val)
-                if isinstance(val, str):
-                    eval = self.cols[index].encodeddict.get(val)
-                    encodedline[index] = eval
-            index += 1
+                    if isinstance(val, str):
+                        eval = self.cols[index].encodeddict.get(val)
+                        encodedline[index] = eval
+                index += 1
 
-        self.rows.append(realline)
-        self.encodedrows.append(encodedline)
-        self.count += 1
+            self.rows.append(realline)
+            # self.encodedrows.append(encodedline)
+            self.count += 1
+        else:
+            print("Line", self.fileline, "has missing values")
 
-
+    def encode_lines(self):
+        # for all Syms
+        # initialize the LabelEncoder
+        # fit from all dictionary keys
+        encodedrows = []
+        for col in self.cols:
+            if col.coltype == 0:
+                keys = list(col.count.keys())
+                col.encoder.fit(keys)
+        for line in self.rows:
+            newline = []
+            for i, val in enumerate(line):
+                newval = val
+                if self.cols[i].coltype == 0:
+                    newval = self.cols[i].encoder.transform([val])[-1]
+                else:
+                    newval = self.compiler(val)
+                newline.append(newval)
+            encodedrows.append(newline)
+        self.encodedrows = encodedrows
+        # for all lines, if col of line is Sym encode with le.transform([val])
+        # store all encoded lines
 
 # ------------------------------------------------------------------------------
 # Clustering Fastmap;still in table class (change to it's own class???)
@@ -480,10 +508,16 @@ def small2Big(root,how=None): # for all of the leaves from smallest to largest p
 
 def getLeafData(root,how=None): # for all of the leaves from smallest to largest print len of rows & median
     EDT = Table(5)
+    # print("root.header", root.header)
+    EDT.create_cols(root.header)
+    counter = 0
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
-        EDT + t.header
-        EDT + random.choice(t.rows)
+        randomrow = random.choice(t.rows)
+        print("random row:", randomrow, counter)
+        EDT + randomrow
+        counter += 1
+    EDT.encode_lines()
     return EDT
 
 
@@ -557,9 +591,9 @@ def sortedleafclusterlabels(root,f,how=None): # for all of the leaves from small
 
 def isValid(self, row):
     for val in row:
-        if val == '?'
-        return 0
-    return 1
+        if val == '?':
+            return False
+    return True
 
 
 
@@ -669,15 +703,34 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 
-def classify(X, y):
+def classify(table):
+    X = []
+    y = []
+    # y_indexes = [col.uid for col in table.y]
+    y_index = table.y[-1].uid
+    for row in table.encodedrows:
+        X_row = []
+        y_row = -1
+        for i, val in enumerate(row):
+            if i == y_index: #for multiple y if i in y_indexes:
+                y_row=val
+            else:
+                X_row.append(val)
+        X.append(X_row)
+        y.append(y_row)
+
     # split data 80% train 20 % test with 10 n folds
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
     # create svm
+    print("printing all lens ", len(X_train), len(X_test), len(y_train), len(y_test) )
+    print("y_test:" , y_test)
     svclassifier = SVC(kernel='linear')
-    clf = RandomForestClassifier(random_state=0)
+    # clf = RandomForestClassifier(random_state=0)
     svclassifier.fit(X_train, y_train)
     # predict
     y_pred = svclassifier.predict(X_test)
+    print("y_pred len:" , len(y_pred))
+    print("y_pred:" , y_pred)
     # evaluation
     print(confusion_matrix(y_test,y_pred))
     print(classification_report(y_test,y_pred))
@@ -697,7 +750,7 @@ def datasetswitch(csv):
     lines = Table.readfile(r'./datasets/' + dataset)
     table = Table(1)
     table + lines[0]
-    for l in lines[1:500]:
+    for l in lines[1:]:
         table + l
     print("CSV --> Table done ...")
 
@@ -708,12 +761,13 @@ def datasetswitch(csv):
 
     print("Whole Data Classification...")
 
-    print ("are they encoded:", table.y[0].encodedvals)
+    table.encode_lines()
     print ("OG row :", table.rows[0:3])
     print ("row encoded:", table.encodedrows[0:3])
     # sys.exit()
-    classify(table.encodedrows, table.y[0].encodedvals)
-    sys.exit()
+
+    classify(table)
+    # sys.exit()
 
 
     print("Clustering ...")
@@ -724,8 +778,13 @@ def datasetswitch(csv):
 
     EDT = getLeafData(root) #get one random point from leaves
 
+    print("EDT:" , EDT)
+    print("EDT encodedrows :" , EDT.encodedrows)
+    print("EDT y :" , EDT.y)
+    print("EDT y[0] :" , EDT.y[0])
+
     print("Extrapolated Data Classification...")
-    classify(EDT.rows, EDT.y[0].encodedvals)
+    classify(EDT)
 
     # print("Comparing cluster labels to ground truths ...")
     # with open( filename + "_BFS.csv", "w") as f:
@@ -746,10 +805,6 @@ def datasetswitch(csv):
     print("---------------------------")
     print("--- completed")
     print("---------------------------")
-
-
-
-
 
 def main():
     # test_num()
@@ -778,10 +833,10 @@ def main():
     print("Other Datasets:")
     print("---------------------------------------------------------------------------------------------------------------------------------------")
     random.seed(10019)
-    # datasetswitch("diabetes.csv") #clusters
+    datasetswitch("diabetes.csv") #clusters
     # datasetswitch("adultscensusincome.csv") #clusters
     # datasetswitch("bankmarketing.csv") #clusters
-    datasetswitch("COMPAS53.csv") #problem with empty cols?
+    # datasetswitch("COMPAS53.csv") #problem with empty cols?
     # datasetswitch("GermanCredit.csv") #clusters
     # datasetswitch("processed.clevelandhearthealth.csv") #clusters
     # datasetswitch("defaultcredit.csv") #clusters
