@@ -6,6 +6,8 @@ import random
 import statistics
 import sys
 from itertools import count
+import pandas as pd
+from tqdm import tqdm
 
 
 # ------------------------------------------------------------------------------
@@ -506,17 +508,17 @@ def small2Big(root,how=None): # for all of the leaves from smallest to largest p
         t = leaf.leftTable
         #print(len(t.rows), [col.mid() for col in t.cols], t.cols[-1].count)
 
-def getLeafData(root,how=None): # for all of the leaves from smallest to largest print len of rows & median
-    EDT = Table(5)
+def getLeafData(root,samples_per_leaf,how=None): # for all of the leaves from smallest to largest print len of rows & median
+    EDT = Table(samples_per_leaf)
     # print("root.header", root.header)
     EDT.create_cols(root.header)
     counter = 0
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
-        randomrow = random.choice(t.rows)
-        # print("random row:", randomrow, counter)
-        EDT + randomrow
-        counter += 1
+        for i in range(samples_per_leaf):
+            randomrow = random.choice(t.rows)
+            EDT + randomrow
+            counter += 1
     EDT.encode_lines()
     return EDT
 
@@ -703,7 +705,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 
-def classify(table, filename, isEDT):
+def classify(table):
     X = []
     y = []
     # y_indexes = [col.uid for col in table.y]
@@ -726,31 +728,31 @@ def classify(table, filename, isEDT):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
     # create svm
     # print("printing all lens ", len(X_train), len(X_test), len(y_train), len(y_test) )
-    print("y_test:" , y_test)
+    # print("y_test:" , y_test)
     svclassifier = SVC(kernel='linear')
     # clf = RandomForestClassifier(random_state=0)
     svclassifier.fit(X_train, y_train)
     # predict
     y_pred = svclassifier.predict(X_test)
     # print("y_pred len:" , len(y_pred))
-    print("y_pred:" , y_pred)
+    # print("y_pred:" , y_pred)
     # evaluation
     cm = confusion_matrix(y_test,y_pred)
-    print(cm)
-    cr = classification_report(y_test,y_pred)
-    print(cr)
-    if isEDT:
-        with open('./output/'+filename+"_EDT.txt", "w") as f:
-            f.write("EDT\n")
-            f.write(str(cm))
-            f.write("\n")
-            f.write(str(cr))
-    else:
-        with open('./output/'+filename+"_WHOLE.txt", "w") as f:
-            f.write("WHOLE\n")
-            f.write(str(cm))
-            f.write("\n")
-            f.write(str(cr))
+    # print(cm)
+    cr = classification_report(y_test,y_pred, output_dict = True)
+    #import pdb;pdb.set_trace()
+    # print(cr)
+    cr_data = []
+    cr_data.append(cr['accuracy'])
+    cr_data.append(cr['macro avg']['support'])
+    cr_data.append(cr['macro avg']['precision'])
+    cr_data.append(cr['macro avg']['recall'])
+    cr_data.append(cr['macro avg']['f1-score'])
+    cr_data.append(cr['weighted avg']['precision'])
+    cr_data.append(cr['weighted avg']['recall'])
+    cr_data.append(cr['weighted avg']['f1-score'])
+    cr_data.append(len(table.rows))
+    return cr_data
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -758,10 +760,11 @@ def classify(table, filename, isEDT):
 def datasetswitch(csv):
     dataset = csv
     filename = dataset[:-4] #cut off the .csv
-
-    print("---------------------------")
-    print("DS:", str(filename))
-    print("---------------------------")
+    colnames = ['accuracy', 'support', 'precision', 'recall', 'f1-score', 'precision_weighted', 'recall_weighted', 'f1-score_weighted', 'samples']
+    data = []
+    # print("---------------------------")
+    # print("DS:", str(filename))
+    # print("---------------------------")
 
     # encodeddict= defaultdict(int)
     lines = Table.readfile(r'./datasets/' + dataset)
@@ -769,46 +772,49 @@ def datasetswitch(csv):
     table + lines[0]
     for l in lines[1:]:
         table + l
-    print("CSV --> Table done ...")
+    # print("CSV --> Table done ...")
 
     # print("Shuffling rows ...")
     # random.shuffle(table.rows)
 
-    print("Encode Sym Values ...")
+    #print("Encode Sym Values ...")
 
-    print("Whole Data Classification...")
+    # print("Whole Data Classification...")
 
     table.encode_lines()
-    print ("OG row :", table.rows[0:3])
-    print ("row encoded:", table.encodedrows[0:3])
+    # print ("OG row :", table.rows[0:3])
+    # print ("row encoded:", table.encodedrows[0:3])
     # sys.exit()
 
-    classify(table, filename, 0)
+    data.append(classify(table))
     # sys.exit()
 
 
-    print("Clustering ...")
-    root = Table.clusters(table.rows, table, int(math.sqrt(len(table.rows))))
+    # print("Clustering ...")
+    enough = int(math.sqrt(len(table.rows)))
+    root = Table.clusters(table.rows, table, enough)
 
-    print("Sorting leaves ...")
+    # print("Sorting leaves ...")
+    # print("Extrapolated Data Classification... until", (enough//2), "samples")
     small2Big(root) #bfs for the leaves gives median row
+    pbar = tqdm(list(range(1,(enough//2))))
+    for samples in pbar:
+        pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
+        EDT = getLeafData(root, samples) #get one random point from leaves
 
-    EDT = getLeafData(root) #get one random point from leaves
+        # print("EDT:" , EDT)
+        # print("EDT encodedrows :" , EDT.encodedrows)
+        # print("EDT y :" , EDT.y)
+        # print("EDT y[0] :" , EDT.y[0])
 
-    # print("EDT:" , EDT)
-    # print("EDT encodedrows :" , EDT.encodedrows)
-    # print("EDT y :" , EDT.y)
-    # print("EDT y[0] :" , EDT.y[0])
-
-    print("Extrapolated Data Classification...")
-    classify(EDT, filename, 1)
+        data.append(classify(EDT))
 
     # print("Comparing cluster labels to ground truths ...")
     # with open( filename + "_BFS.csv", "w") as f:
     #     sortedleafclusterlabels(root,f)
 
 
-    print("Performance Metrics ...")
+    # print("Performance Metrics ...")
     # abcd = Abcd(db='randomIn',rx='all')
     # train = table.clabels
     # test  = table.y
@@ -818,10 +824,13 @@ def datasetswitch(csv):
     #     abcd.tell(actual,predicted)
     # abcd.header()
     # abcd.ask()
+    # import pdb;pdb.set_trace()
+    df = pd.DataFrame(data, columns=colnames)
+    df.to_csv("./output/"+filename + "_SVM.csv", index=False)
 
-    print("---------------------------")
-    print("--- completed")
-    print("---------------------------")
+    # print("---------------------------")
+    # print("--- completed")
+    # print("---------------------------")
 
 def main():
     # test_num()
@@ -846,18 +855,23 @@ def main():
     # print("--- completed")
     # print("---------------------------------------------------------------------------------------------------------------------------------------")
 
-    print("---------------------------------------------------------------------------------------------------------------------------------------")
-    print("Other Datasets:")
-    print("---------------------------------------------------------------------------------------------------------------------------------------")
+    # print("---------------------------------------------------------------------------------------------------------------------------------------")
+    # print("Other Datasets:")
+    # print("---------------------------------------------------------------------------------------------------------------------------------------")
     random.seed(10019)
-    datasetswitch("diabetes.csv") #clusters
-    datasetswitch("adultscensusincome.csv") #clusters
-    datasetswitch("bankmarketing.csv") #clusters
-    datasetswitch("CleanCOMPAS53.csv") #problem with empty cols?
-    datasetswitch("GermanCredit.csv") #clusters
-    datasetswitch("processed.clevelandhearthealth.csv") #clusters
-    datasetswitch("defaultcredit.csv") #clusters
-    datasetswitch("homecreditapplication_train.csv") # loaded 266113 rows after 2 hours; error on compiling sym/num cols
+    datasets = ["diabetes.csv", "adultscensusincome.csv", "bankmarketing.csv", "CleanCOMPAS53.csv", "GermanCredit.csv", "processed.clevelandhearthealth.csv", "defaultcredit.csv", "homecreditapplication_train.csv"]
+    pbar = tqdm(datasets)
+    for dataset in pbar:
+        pbar.set_description("Processing %s" % dataset)
+        datasetswitch(dataset)
+    # datasetswitch("diabetes.csv") #clusters
+    # datasetswitch("adultscensusincome.csv") #clusters
+    # datasetswitch("bankmarketing.csv") #clusters
+    # datasetswitch("CleanCOMPAS53.csv") #problem with empty cols?
+    # datasetswitch("GermanCredit.csv") #clusters
+    # datasetswitch("processed.clevelandhearthealth.csv") #clusters
+    # datasetswitch("defaultcredit.csv") #clusters
+    # datasetswitch("homecreditapplication_train.csv") # loaded 266113 rows after 2 hours; error on compiling sym/num cols
 
 # self = options(__doc__)
 if __name__ == '__main__':
