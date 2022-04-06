@@ -42,7 +42,7 @@ class Sym(Col):
         self.n = 0
         self.most = 0
         self.mode = ""
-        self.uid = Col.id(self) #uid --> it allows for permanence and recalling necessary subtables
+        self.uid = uid #uid --> it allows for permanence and recalling necessary subtables
         self.count = defaultdict(int) #will never throw a key error bc it will guve default value as missing key
         self.encodeddict= defaultdict(int)
         self.encodedvals = []
@@ -708,6 +708,9 @@ def classify(table):
     y = []
     # y_indexes = [col.uid for col in table.y]
     y_index = table.y[-1].uid
+    print("y_index:", y_index)
+    print("len(rows)",len(table.rows[0])-1)
+    print("len(encodedrows)",len(table.encodedrows[0])-1)
     for row in table.encodedrows:
         X_row = []
         y_row = -1
