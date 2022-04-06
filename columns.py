@@ -514,7 +514,7 @@ def getLeafData(root,how=None): # for all of the leaves from smallest to largest
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
         randomrow = random.choice(t.rows)
-        print("random row:", randomrow, counter)
+        # print("random row:", randomrow, counter)
         EDT + randomrow
         counter += 1
     EDT.encode_lines()
@@ -708,9 +708,9 @@ def classify(table):
     y = []
     # y_indexes = [col.uid for col in table.y]
     y_index = table.y[-1].uid
-    print("y_index:", y_index)
-    print("len(rows)",len(table.rows[0])-1)
-    print("len(encodedrows)",len(table.encodedrows[0])-1)
+    # print("y_index:", y_index)
+    # print("len(rows)",len(table.rows[0])-1)
+    # print("len(encodedrows)",len(table.encodedrows[0])-1)
     for row in table.encodedrows:
         X_row = []
         y_row = -1
@@ -725,14 +725,14 @@ def classify(table):
     # split data 80% train 20 % test with 10 n folds
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
     # create svm
-    print("printing all lens ", len(X_train), len(X_test), len(y_train), len(y_test) )
+    # print("printing all lens ", len(X_train), len(X_test), len(y_train), len(y_test) )
     print("y_test:" , y_test)
     svclassifier = SVC(kernel='linear')
     # clf = RandomForestClassifier(random_state=0)
     svclassifier.fit(X_train, y_train)
     # predict
     y_pred = svclassifier.predict(X_test)
-    print("y_pred len:" , len(y_pred))
+    # print("y_pred len:" , len(y_pred))
     print("y_pred:" , y_pred)
     # evaluation
     print(confusion_matrix(y_test,y_pred))
@@ -781,10 +781,10 @@ def datasetswitch(csv):
 
     EDT = getLeafData(root) #get one random point from leaves
 
-    print("EDT:" , EDT)
-    print("EDT encodedrows :" , EDT.encodedrows)
-    print("EDT y :" , EDT.y)
-    print("EDT y[0] :" , EDT.y[0])
+    # print("EDT:" , EDT)
+    # print("EDT encodedrows :" , EDT.encodedrows)
+    # print("EDT y :" , EDT.y)
+    # print("EDT y[0] :" , EDT.y[0])
 
     print("Extrapolated Data Classification...")
     classify(EDT)
@@ -836,8 +836,8 @@ def main():
     print("Other Datasets:")
     print("---------------------------------------------------------------------------------------------------------------------------------------")
     random.seed(10019)
-    datasetswitch("diabetes.csv") #clusters
-    # datasetswitch("adultscensusincome.csv") #clusters
+    # datasetswitch("diabetes.csv") #clusters
+    datasetswitch("adultscensusincome.csv") #clusters
     # datasetswitch("bankmarketing.csv") #clusters
     # datasetswitch("COMPAS53.csv") #problem with empty cols?
     # datasetswitch("GermanCredit.csv") #clusters
