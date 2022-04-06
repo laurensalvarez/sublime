@@ -859,7 +859,7 @@ def main():
     # print("Other Datasets:")
     # print("---------------------------------------------------------------------------------------------------------------------------------------")
     random.seed(10019)
-    datasets = ["diabetes.csv", "adultscensusincome.csv", "bankmarketing.csv", "CleanCOMPAS53.csv", "GermanCredit.csv", "processed.clevelandhearthealth.csv", "defaultcredit.csv", "homecreditapplication_train.csv"]
+    datasets = ["diabetes.csv",  "GermanCredit.csv", "processed.clevelandhearthealth.csv", "CleanCOMPAS53.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
