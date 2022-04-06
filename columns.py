@@ -348,8 +348,8 @@ class Table:
             self.rows.append(realline)
             # self.encodedrows.append(encodedline)
             self.count += 1
-        else:
-            print("Line", self.fileline, "has missing values")
+        # else:
+            # print("Line", self.fileline, "has missing values")
 
     def encode_lines(self):
         # for all Syms
@@ -438,7 +438,7 @@ class Table:
     @staticmethod
 
     def clusters(items, table, enough, top = None, depth = 0):
-        print("|.. " * depth,len(table.rows))
+        # print("|.. " * depth,len(table.rows))
         # print("top cluster:", top)
         if len(items) < enough: # if/while the length of the less than the stopping criteria #should be changable from command line
             leftTable = Table(0) #make a table w/ uid = 0
@@ -504,7 +504,7 @@ def rowSize(t): return len(t.leftTable.rows) #gets the size of the rows
 def small2Big(root,how=None): # for all of the leaves from smallest to largest print len of rows & median
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
-        print(len(t.rows), [col.mid() for col in t.cols], t.cols[-1].count)
+        #print(len(t.rows), [col.mid() for col in t.cols], t.cols[-1].count)
 
 def getLeafData(root,how=None): # for all of the leaves from smallest to largest print len of rows & median
     EDT = Table(5)
@@ -703,7 +703,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 
-def classify(table):
+def classify(table, filename, isEDT):
     X = []
     y = []
     # y_indexes = [col.uid for col in table.y]
@@ -735,8 +735,22 @@ def classify(table):
     # print("y_pred len:" , len(y_pred))
     print("y_pred:" , y_pred)
     # evaluation
-    print(confusion_matrix(y_test,y_pred))
-    print(classification_report(y_test,y_pred))
+    cm = confusion_matrix(y_test,y_pred)
+    print(cm)
+    cr = classification_report(y_test,y_pred)
+    print(cr)
+    if isEDT:
+        with open('./output/'+filename+"_EDT.txt", "w") as f:
+            f.write("EDT\n")
+            f.write(str(cm))
+            f.write("\n")
+            f.write(str(cr))
+    else:
+        with open('./output/'+filename+"_WHOLE.txt", "w") as f:
+            f.write("WHOLE\n")
+            f.write(str(cm))
+            f.write("\n")
+            f.write(str(cr))
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -769,7 +783,7 @@ def datasetswitch(csv):
     print ("row encoded:", table.encodedrows[0:3])
     # sys.exit()
 
-    classify(table)
+    classify(table, filename, 0)
     # sys.exit()
 
 
@@ -787,7 +801,7 @@ def datasetswitch(csv):
     # print("EDT y[0] :" , EDT.y[0])
 
     print("Extrapolated Data Classification...")
-    classify(EDT)
+    classify(EDT, filename, 1)
 
     # print("Comparing cluster labels to ground truths ...")
     # with open( filename + "_BFS.csv", "w") as f:
@@ -836,14 +850,14 @@ def main():
     print("Other Datasets:")
     print("---------------------------------------------------------------------------------------------------------------------------------------")
     random.seed(10019)
-    # datasetswitch("diabetes.csv") #clusters
+    datasetswitch("diabetes.csv") #clusters
     datasetswitch("adultscensusincome.csv") #clusters
-    # datasetswitch("bankmarketing.csv") #clusters
-    # datasetswitch("COMPAS53.csv") #problem with empty cols?
-    # datasetswitch("GermanCredit.csv") #clusters
-    # datasetswitch("processed.clevelandhearthealth.csv") #clusters
-    # datasetswitch("defaultcredit.csv") #clusters
-    # datasetswitch("homecreditapplication_train.csv") # loaded 266113 rows after 2 hours; error on compiling sym/num cols
+    datasetswitch("bankmarketing.csv") #clusters
+    datasetswitch("CleanCOMPAS53.csv") #problem with empty cols?
+    datasetswitch("GermanCredit.csv") #clusters
+    datasetswitch("processed.clevelandhearthealth.csv") #clusters
+    datasetswitch("defaultcredit.csv") #clusters
+    datasetswitch("homecreditapplication_train.csv") # loaded 266113 rows after 2 hours; error on compiling sym/num cols
 
 # self = options(__doc__)
 if __name__ == '__main__':
