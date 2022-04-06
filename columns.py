@@ -757,7 +757,7 @@ def classify(table):
 # Main
 # ------------------------------------------------------------------------------
 
-def datasetswitch(csv):
+def datasetswitch(csv, limiter = None):
     dataset = csv
     filename = dataset[:-4] #cut off the .csv
     colnames = ['accuracy', 'support', 'precision', 'recall', 'f1-score', 'precision_weighted', 'recall_weighted', 'f1-score_weighted', 'samples']
@@ -770,8 +770,12 @@ def datasetswitch(csv):
     lines = Table.readfile(r'./datasets/' + dataset)
     table = Table(1)
     table + lines[0]
-    for l in lines[1:]:
-        table + l
+    if limiter != None:
+        for l in lines[1:limiter]:
+            table + l
+    else:
+        for l in lines[1:]:
+            table + l
     # print("CSV --> Table done ...")
 
     # print("Shuffling rows ...")
@@ -859,11 +863,11 @@ def main():
     # print("Other Datasets:")
     # print("---------------------------------------------------------------------------------------------------------------------------------------")
     random.seed(10019)
-    datasets = ["diabetes.csv",  "GermanCredit.csv", "processed.clevelandhearthealth.csv", "CleanCOMPAS53.csv"]
+    datasets = ["defaultcredit.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
-        datasetswitch(dataset)
+        datasetswitch(dataset, limiter = 1000)
     # datasetswitch("diabetes.csv") #clusters
     # datasetswitch("adultscensusincome.csv") #clusters
     # datasetswitch("bankmarketing.csv") #clusters
