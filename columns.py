@@ -6,8 +6,7 @@ import random
 import statistics
 import sys
 from itertools import count
-import pandas as pd
-from tqdm import tqdm
+
 
 
 # ------------------------------------------------------------------------------
@@ -46,8 +45,6 @@ class Sym(Col):
         self.mode = ""
         self.uid = uid #uid --> it allows for permanence and recalling necessary subtables
         self.count = defaultdict(int) #will never throw a key error bc it will guve default value as missing key
-        self.encodeddict= defaultdict(int)
-        self.encodedvals = []
         self.encoder = preprocessing.LabelEncoder()
         self.coltype = 0
         self.vals = []
@@ -63,12 +60,6 @@ class Sym(Col):
     def add (self, v, inc=1): #want to be able to control the increments
         self.n += inc # add value to the count
         self.vals.append(v)
-
-        unique_symlist = list(set(self.vals))
-        self.encodeddict = dict(zip(unique_symlist, range(len(unique_symlist))))
-        ev = self.encodeddict.get(v)
-        self.encodedvals.append(ev)
-
         self.count[v] += inc # add value to the dictionary with count +1
         tmp = self.count[v]
         if tmp > self.most: #check which is the most seen; if it's the most then assign and update mode
@@ -152,10 +143,8 @@ class Num(Col):
         # NO statistics.median(self.vals)
         listLen = len(self.vals)
         self.vals.sort()
-        # print("listLen:", listLen)
+
         if listLen == 0:
-            # print("ERROR: empty self.vals no median to calculate")
-            # print("self.vals:", self.vals)
             self.median = 0
             return self.median
 
@@ -171,10 +160,7 @@ class Num(Col):
         return self.median
          #returns median
 
-
     def dist(self, x, y): #Aha's distance bw two nums
-        # print("Aha's Nums ...x", x)
-        # print("Aha's Nums ...y", y)
         if (x == "?" or x == "") and (y == "?" or y == ""):
             return 1
         if (x == "?" or x == "") or (y == "?" or y == ""):
@@ -213,7 +199,6 @@ class Table:
         self.xsyms = [] #sym x points
         self.header = ""
         self.clabels = []
-        self.encodemap = defaultdict(int)
 
 # ------------------------------------------------------------------------------
 # Table Class: Helper Functions
@@ -280,7 +265,6 @@ class Table:
                 col = Num(''.join(c for c in val if not c in ['?',':']), index)
                 self.nums.append(col)
                 self.cols.append(col)
-                # self.encodemap[index] = col.encodeddict
 
                 if "!" in val or "-" in val or "+" in val: #is it a klass, or goal (goals are y)
                     self.y.append(col)
@@ -300,7 +284,6 @@ class Table:
                 col = Sym(''.join(c for c in val if not c in ['?',':']), index)
                 self.syms.append(col)
                 self.cols.append(col)
-                self.encodemap[index] = col.encodeddict
 
                 if "!" in val or "-" in val or "+" in val: #is it a klass, or goal (goals are y)
                     self.y.append(col)
@@ -327,28 +310,21 @@ class Table:
             print("len(line)" , len(line), "self.linesize", self.linesize)
             print("Line", self.fileline, "has an error")
             return
+
         if isValid(self, line):
             realline = []
-            encodedline = []
             index = 0
-
             for val in line:
                 if index not in self.skip: #check if it needs to be skipped
                     if val == "?" or val == "":
                         realline.append(val) #add to realline
-                        encodedline.append(val)
                         index += 1
                         continue
                     self.cols[index] + self.compiler(val)
                     realline.append(val)
-                    encodedline.append(val)
-                    if isinstance(val, str):
-                        eval = self.cols[index].encodeddict.get(val)
-                        encodedline[index] = eval
                 index += 1
 
             self.rows.append(realline)
-            # self.encodedrows.append(encodedline)
             self.count += 1
         # else:
             # print("Line", self.fileline, "has missing values")
@@ -393,9 +369,8 @@ class Table:
             a = top.distance(x[0], right) # for each row get the distance between that and the farthest point right
             b = top.distance(x[0], left) # for each row get the distance between that and the farthest point left
             x[1] = (a ** 2 + c**2 - b**2)/(2*c + 10e-32) #cosine rule for the distance assign to dist in (row, dist)
-        #print("Presort", [x[0][-1] for x in items])
+
         items.sort(key = lambda x: x[1]) #sort by distance (method sorts the list ascending by default; can have sorting criteria)
-        #print("Postsort", [x[0][-1] for x in items])
         splitpoint = len(items) // 2 #integral divison
         leftItems = [x[0] for x in items[: splitpoint]] #left are the rows to the splitpoint
         rightItems = [x[0] for x in items[splitpoint :]] #right are the rows from the splitpoint onward
@@ -510,7 +485,6 @@ def small2Big(root,how=None): # for all of the leaves from smallest to largest p
 
 def getLeafData(root,samples_per_leaf,how=None): # for all of the leaves from smallest to largest print len of rows & median
     EDT = Table(samples_per_leaf)
-    # print("root.header", root.header)
     EDT.create_cols(root.header)
     counter = 0
     for leaf in sorted(nodes(root), key=how or rowSize):
@@ -534,9 +508,6 @@ def sortedleafclusterlabels(root,f,how=None): # for all of the leaves from small
         t = leaf.leftTable
 
         clabel = t.y[0].mid()
-        # print("t.y:", str(t.y))
-        # print("t.y mid():", t.y[0].mid())
-        # print("clabel:", clabel)
 
         for row in t.rows:
             if row not in t.skip:
@@ -698,7 +669,7 @@ def test_rows():
 # Classifier
 # ------------------------------------------------------------------------------
 # Standard scientific Python imports
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.svm import SVC
 from sklearn import preprocessing
 from sklearn.preprocessing import OneHotEncoder
@@ -708,11 +679,9 @@ from sklearn.ensemble import RandomForestClassifier
 def classify(table):
     X = []
     y = []
-    # y_indexes = [col.uid for col in table.y]
+    all_data ={}
+
     y_index = table.y[-1].uid
-    # print("y_index:", y_index)
-    # print("len(rows)",len(table.rows[0])-1)
-    # print("len(encodedrows)",len(table.encodedrows[0])-1)
     for row in table.encodedrows:
         X_row = []
         y_row = -1
@@ -725,34 +694,53 @@ def classify(table):
         y.append(y_row)
 
     # split data 80% train 20 % test with 10 n folds
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
+    #
+
     # create svm
-    # print("printing all lens ", len(X_train), len(X_test), len(y_train), len(y_test) )
-    # print("y_test:" , y_test)
     svclassifier = SVC(kernel='linear')
     # clf = RandomForestClassifier(random_state=0)
-    svclassifier.fit(X_train, y_train)
+
     # predict
-    y_pred = svclassifier.predict(X_test)
-    # print("y_pred len:" , len(y_pred))
-    # print("y_pred:" , y_pred)
-    # evaluation
-    cm = confusion_matrix(y_test,y_pred)
-    # print(cm)
-    cr = classification_report(y_test,y_pred, output_dict = True)
-    #import pdb;pdb.set_trace()
-    # print(cr)
-    cr_data = []
-    cr_data.append(cr['accuracy'])
-    cr_data.append(cr['macro avg']['support'])
-    cr_data.append(cr['macro avg']['precision'])
-    cr_data.append(cr['macro avg']['recall'])
-    cr_data.append(cr['macro avg']['f1-score'])
-    cr_data.append(cr['weighted avg']['precision'])
-    cr_data.append(cr['weighted avg']['recall'])
-    cr_data.append(cr['weighted avg']['f1-score'])
-    cr_data.append(len(table.rows))
-    return cr_data
+    for i in range(1,11):
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20)
+        svclassifier.fit(X_train, y_train)
+        y_pred = svclassifier.predict(X_test)
+
+        # evaluation
+        # cm = confusion_matrix(y_test,y_pred)
+        # print(cm)
+        cr = classification_report(y_test,y_pred, output_dict = True)
+        # print(cr)
+        cr_data = []
+        cr_data.append(cr['accuracy'])
+        cr_data.append(cr['macro avg']['support'])
+        cr_data.append(cr['macro avg']['precision'])
+        cr_data.append(cr['macro avg']['recall'])
+        cr_data.append(cr['macro avg']['f1-score'])
+        # cr_data.append(cr['weighted avg']['precision'])
+        # cr_data.append(cr['weighted avg']['recall'])
+        # cr_data.append(cr['weighted avg']['f1-score'])
+        cr_data.append(len(table.rows))
+
+        all_data[i] = cr_data
+
+    return all_data
+
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+import pandas as pd
+# def plot():
+#
+#     plt.plot(x, y, label = "accuracy")
+#     plt.plot(y, x, label = "support")
+#     plt.plot(x, y, label = "recall")
+#     plt.plot(y, x, label = "f1-score")
+#     plt.plot(x, y, label = "precision")
+#     plt.plot(y, x, label = "line 2")
+#
+#     plt.legend()
+#     plt.show()
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -760,13 +748,11 @@ def classify(table):
 def datasetswitch(csv, limiter = None):
     dataset = csv
     filename = dataset[:-4] #cut off the .csv
-    colnames = ['accuracy', 'support', 'precision', 'recall', 'f1-score', 'precision_weighted', 'recall_weighted', 'f1-score_weighted', 'samples']
-    data = []
-    # print("---------------------------")
-    # print("DS:", str(filename))
-    # print("---------------------------")
+    # colnames = ['accuracy', 'support', 'precision', 'recall', 'f1-score', 'precision_weighted', 'recall_weighted', 'f1-score_weighted', 'samples']
+    colnames = ['accuracy', 'support', 'precision', 'recall', 'f1-score', 'samples']
+    data = {}
+    x_data = []
 
-    # encodeddict= defaultdict(int)
     lines = Table.readfile(r'./datasets/' + dataset)
     table = Table(1)
     table + lines[0]
@@ -776,23 +762,6 @@ def datasetswitch(csv, limiter = None):
     else:
         for l in lines[1:]:
             table + l
-    # print("CSV --> Table done ...")
-
-    # print("Shuffling rows ...")
-    # random.shuffle(table.rows)
-
-    #print("Encode Sym Values ...")
-
-    # print("Whole Data Classification...")
-
-    table.encode_lines()
-    # print ("OG row :", table.rows[0:3])
-    # print ("row encoded:", table.encodedrows[0:3])
-    # sys.exit()
-
-    data.append(classify(table))
-    # sys.exit()
-
 
     # print("Clustering ...")
     enough = int(math.sqrt(len(table.rows)))
@@ -800,74 +769,42 @@ def datasetswitch(csv, limiter = None):
 
     # print("Sorting leaves ...")
     # print("Extrapolated Data Classification... until", (enough//2), "samples")
-    small2Big(root) #bfs for the leaves gives median row
-    pbar = tqdm(list(range(1,(enough//2))))
+    # small2Big(root) #bfs for the leaves gives median row
+    pbar = tqdm(list(range(1,(int(enough*0.75))))) #loading bar
     for samples in pbar:
         pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
         EDT = getLeafData(root, samples) #get one random point from leaves
-
-        # print("EDT:" , EDT)
-        # print("EDT encodedrows :" , EDT.encodedrows)
-        # print("EDT y :" , EDT.y)
-        # print("EDT y[0] :" , EDT.y[0])
-
-        data.append(classify(EDT))
-
-    # print("Comparing cluster labels to ground truths ...")
-    # with open( filename + "_BFS.csv", "w") as f:
-    #     sortedleafclusterlabels(root,f)
+        data[samples] = classify(EDT)
 
 
-    # print("Performance Metrics ...")
-    # abcd = Abcd(db='randomIn',rx='all')
-    # train = table.clabels
-    # test  = table.y
+    # print("Whole Data Classification...")
+    table.encode_lines()
+    data[len(table.rows)] = classify(table)
 
-    # # random.shuffle(test)
-    # for actual, predicted in zip(train,test):
-    #     abcd.tell(actual,predicted)
-    # abcd.header()
-    # abcd.ask()
-    # import pdb;pdb.set_trace()
-    df = pd.DataFrame(data, columns=colnames)
+    for key, v in data.items():
+        # print("data dict: " , data)
+        for key2 in v.items():
+            # print("key2", key2)
+            tmp = key2[1]
+            x_data.append(tmp)
+
+    # print("x_data ", x_data)
+    df = pd.DataFrame(x_data, columns=colnames)
     df.to_csv("./output/"+filename + "_SVM.csv", index=False)
+    x = df.iloc[-1]
+    y = df.iloc[:,:-1]
+    df.plot( x = x, y = y, kind = 'scatter')
+    plt.savefig("./plots/"+filename + "_SVM.png")
+    plt.close()
 
-    # print("---------------------------")
-    # print("--- completed")
-    # print("---------------------------")
 
 def main():
-    # test_num()
-    # test_sym()
-    # test_rows()
-    # print("---------------------------")
-    # print("All 3 unit tests passed")
-    # print("---------------------------")
-    # print("---------------------------")
-
-    # abcd = Abcd(db='randomIn',rx='all')
-    # train = table.clabels
-    # test  = table.y
-    # print("how many cluster labels:", len(table.clabels))
-    # print("how many test/y labels:", len(table.y))
-    # # random.shuffle(test)
-    # for actual, predicted in zip(train,test):
-    #     abcd.tell(actual,predicted)
-    # abcd.header()
-    # abcd.ask()
-    # print("---------------------------------------------------------------------------------------------------------------------------------------")
-    # print("--- completed")
-    # print("---------------------------------------------------------------------------------------------------------------------------------------")
-
-    # print("---------------------------------------------------------------------------------------------------------------------------------------")
-    # print("Other Datasets:")
-    # print("---------------------------------------------------------------------------------------------------------------------------------------")
     random.seed(10019)
-    datasets = ["defaultcredit.csv"]
+    datasets = ["diabetes.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
-        datasetswitch(dataset, limiter = 1000)
+        datasetswitch(dataset, limiter = None)
     # datasetswitch("diabetes.csv") #clusters
     # datasetswitch("adultscensusincome.csv") #clusters
     # datasetswitch("bankmarketing.csv") #clusters
