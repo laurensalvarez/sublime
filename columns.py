@@ -713,7 +713,7 @@ def classify(table):
         # print(cr)
         cr_data = []
         cr_data.append(cr['accuracy'])
-        cr_data.append(cr['macro avg']['support'])
+        # cr_data.append(cr['macro avg']['support'])
         cr_data.append(cr['macro avg']['precision'])
         cr_data.append(cr['macro avg']['recall'])
         cr_data.append(cr['macro avg']['f1-score'])
@@ -749,7 +749,7 @@ def datasetswitch(csv, limiter = None):
     dataset = csv
     filename = dataset[:-4] #cut off the .csv
     # colnames = ['accuracy', 'support', 'precision', 'recall', 'f1-score', 'precision_weighted', 'recall_weighted', 'f1-score_weighted', 'samples']
-    colnames = ['accuracy', 'support', 'precision', 'recall', 'f1-score', 'samples']
+    colnames = ['accuracy', 'precision', 'recall', 'f1-score', 'samples']
     data = {}
     x_data = []
 
@@ -790,14 +790,16 @@ def datasetswitch(csv, limiter = None):
 
     # print("x_data ", x_data)
     df = pd.DataFrame(x_data, columns=colnames)
+
     df.to_csv("./output/"+filename + "_SVM.csv", index=False)
     # df.plot(x = 'samples', y = ['accuracy', 'precision', 'recall', 'f1-score'], kind = 'scatter')
-    ax = df.plot(x = 'samples', y = 'accuracy', kind = 'scatter', c = 'r', label = 'accuracy')
-    df.plot(x = 'samples', y = 'precision', kind = 'scatter', c = 'b', label = 'precision', ax = ax)
-    df.plot(x = 'samples', y = 'recall', kind = 'scatter', c = 'g', label = 'recall', ax = ax)
-    df.plot(x = 'samples', y = 'f1-score', kind = 'scatter', c = 'orange', label = 'f1-score', ax = ax)
+    ax = df.plot(x = 'samples', y = 'accuracy', kind = 'scatter', c = 'b', label = 'accuracy', marker = ',')
+    df.plot(x = 'samples', y = 'precision', kind = 'scatter', c = 'orange', label = 'precision', marker = ',', ax = ax)
+    df.plot(x = 'samples', y = 'recall', kind = 'scatter', c = 'g', label = 'recall', marker = ',', ax = ax)
+    df.plot(x = 'samples', y = 'f1-score', kind = 'scatter', c = 'r', label = 'f1-score', marker = ',', ax = ax)
+    dfmeans = df.groupby(by = "samples").mean().plot(marker = 'o', ls = '-', ax = ax)
     ax.set_xlabel("sample size")
-    ax.set_ylabel("['accuracy', 'support', 'precision', 'recall', 'f1-score']")
+    ax.set_ylabel("['accuracy', 'precision', 'recall', 'f1-score']")
     plt.savefig("./plots/"+filename + "_SVM.png")
     plt.close()
 
