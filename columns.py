@@ -791,9 +791,13 @@ def datasetswitch(csv, limiter = None):
     # print("x_data ", x_data)
     df = pd.DataFrame(x_data, columns=colnames)
     df.to_csv("./output/"+filename + "_SVM.csv", index=False)
-    x = df.iloc[-1]
-    y = df.iloc[:,:-1]
-    df.plot( x = x, y = y, kind = 'scatter')
+    # df.plot(x = 'samples', y = ['accuracy', 'precision', 'recall', 'f1-score'], kind = 'scatter')
+    ax = df.plot(x = 'samples', y = 'accuracy', kind = 'scatter', c = 'r', label = 'accuracy')
+    df.plot(x = 'samples', y = 'precision', kind = 'scatter', c = 'b', label = 'precision', ax = ax)
+    df.plot(x = 'samples', y = 'recall', kind = 'scatter', c = 'g', label = 'recall', ax = ax)
+    df.plot(x = 'samples', y = 'f1-score', kind = 'scatter', c = 'orange', label = 'f1-score', ax = ax)
+    ax.set_xlabel("sample size")
+    ax.set_ylabel("['accuracy', 'support', 'precision', 'recall', 'f1-score']")
     plt.savefig("./plots/"+filename + "_SVM.png")
     plt.close()
 
@@ -804,7 +808,7 @@ def main():
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
-        datasetswitch(dataset, limiter = None)
+        datasetswitch(dataset, limiter = 100)
     # datasetswitch("diabetes.csv") #clusters
     # datasetswitch("adultscensusincome.csv") #clusters
     # datasetswitch("bankmarketing.csv") #clusters
