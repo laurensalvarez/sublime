@@ -808,7 +808,7 @@ def main():
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
-        datasetswitch(dataset, limiter = 100)
+        datasetswitch(dataset, limiter = None)
     # datasetswitch("diabetes.csv") #clusters
     # datasetswitch("adultscensusincome.csv") #clusters
     # datasetswitch("bankmarketing.csv") #clusters
