@@ -737,17 +737,20 @@ def classify(table):
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pandas as pd
-# def plot():
-#
-#     plt.plot(x, y, label = "accuracy")
-#     plt.plot(y, x, label = "support")
-#     plt.plot(x, y, label = "recall")
-#     plt.plot(y, x, label = "f1-score")
-#     plt.plot(x, y, label = "precision")
-#     plt.plot(y, x, label = "line 2")
-#
-#     plt.legend()
-#     plt.show()
+import numpy as np
+
+
+# def plot(df, xcol, ycols, filename, group):
+#     plt.figure(1)
+#     ax = df.plot(x = xcol, y = ycols, kind = 'scatter', c = 'b', marker = ',')
+#     df.plot(x = xcol, y = , kind = 'scatter', c = 'orange', marker = ',', ax = ax)
+#     df.plot(x = xcol, y = 'macro_recall', kind = 'scatter', c = 'g', marker = ',', ax = ax)
+#     df.plot(x = xcol, y = 'macro_f1-score', kind = 'scatter', c = 'r', marker = ',', ax = ax)
+#     dfmeans = df.groupby(['samples'])['accuracy','macro_precision','macro_recall', 'macro_f1-score'].mean().plot(marker = 'o',ls = '-', ax = ax)
+#     ax.set_xlabel("sample size")
+#     ax.set_ylabel("macro precision, recall, f1-score, and accuracy")
+#     plt.savefig("./plots/"+filename + "macro_SVM.png")
+#     plt.close()
 
 # ------------------------------------------------------------------------------
 # Main
@@ -757,7 +760,8 @@ def datasetswitch(csv, limiter = None):
     dataset = csv
     filename = dataset[:-4] #cut off the .csv
     # colnames = ['accuracy', 'support', 'precision', 'recall', 'f1-score', 'precision_weighted', 'recall_weighted', 'f1-score_weighted', 'samples']
-    colnames = ['samples','accuracy', 'class1_precision', 'class1_recall', 'class1_f1-score','class0_precision', 'class0_recall', 'class0_f1-score', 'macro_precision', 'macro_recall', 'macro_f1-score']
+    colnames = ['samples','accuracy', 'class0_precision', 'class0_recall',
+    'class0_f1-score','class1_precision', 'class1_recall', 'class1_f1-score', 'macro_precision', 'macro_recall', 'macro_f1-score']
     data = {}
     x_data = []
 
@@ -798,45 +802,39 @@ def datasetswitch(csv, limiter = None):
 
     # print("x_data ", x_data)
     df = pd.DataFrame(x_data, columns=colnames)
+    # print(df.head())
 
     df.to_csv("./output/"+filename + "_SVM.csv", index=False)
-    # df.plot(x = 'samples', y = ['accuracy', 'precision', 'recall', 'f1-score'], kind = 'scatter')
-    plot = plt.figure(1)
-    macro_ax = df.plot(x = 'samples', y = 'accuracy', kind = 'scatter', c = 'b', label = 'accuracy', marker = ',')
-    df.plot(x = 'samples', y = 'macro_precision', kind = 'scatter', c = 'orange', label = 'macro_precision', marker = ',', ax = macro_ax)
-    df.plot(x = 'samples', y = 'macro_recall', kind = 'scatter', c = 'g', label = 'macro_recall', marker = ',', ax = macro_ax)
-    df.plot(x = 'samples', y = 'macro_f1-score', kind = 'scatter', c = 'r', label = 'macro_f1-score', marker = ',', ax = macro_ax)
-    # print(df.groupby(by = 'samples').agg({'macro_precision': 'mean'}))
-    # .plot(c = 'orange', marker = 'o', ls = '-', ax = macro_ax)
-    macromeans= df.groupby(by = 'samples', as_index = False)[['macro_precision', 'macro_recall','macro_f1-score']].mean().plot(marker = 'o', ls = '-')
-    # print(macromeans)
-    # macromeans.plot(x = 'samples', y = 'macro_precision', c = 'r', marker = 'o', ls = '-', ax = macro_ax)
-    # macromeans.plot(x = 'samples', y = 'macro_recall', c = 'r', marker = 'o', ls = '-', ax = macro_ax)
-    # macromeans.plot(x = 'samples', y = 'macro_f1', c = 'r', marker = 'o', ls = '-', ax = macro_ax)
-    # .plot(c = 'g', marker = 'o', ls = '-', ax = macro_ax)
-    # df.groupby(by = 'samples', as_index=True)[['macro_f1-score']].mean().plot(c = 'r', marker = 'o', ls = '-', ax = macro_ax)
+
+    plt.figure(1)
+    # macro_ax = df.plot(x = ['samples','samples','samples','samples'], y = ['accuracy','macro_precision','macro_recall', 'macro_f1-score'] , color = ['blue','orange','green', 'red'],kind = 'scatter', marker = ',')
+    macro_ax = df.plot(x = 'samples', y = 'accuracy', kind = 'scatter', c = 'b', marker = ',')
+    df.plot(x = 'samples', y = 'macro_precision', kind = 'scatter', c = 'orange', marker = ',', ax = macro_ax)
+    df.plot(x = 'samples', y = 'macro_recall', kind = 'scatter', c = 'g', marker = ',', ax = macro_ax)
+    df.plot(x = 'samples', y = 'macro_f1-score', kind = 'scatter', c = 'r', marker = ',', ax = macro_ax)
+    dfmeans = df.groupby(['samples'])['accuracy','macro_precision','macro_recall', 'macro_f1-score'].mean().plot(marker = 'o',ls = '-', ax = macro_ax)
     macro_ax.set_xlabel("sample size")
     macro_ax.set_ylabel("macro precision, recall, f1-score, and accuracy")
     plt.savefig("./plots/"+filename + "macro_SVM.png")
     plt.close()
 
     plot2 = plt.figure(2)
-    class0_ax = df.plot(x = 'samples', y = 'accuracy', kind = 'scatter', c = 'b', label = 'accuracy', marker = ',')
-    df.plot(x = 'samples', y = 'class0_precision', kind = 'scatter', c = 'orange', label = 'class0_precision', marker = ',', ax = class0_ax)
-    df.plot(x = 'samples', y = 'class0_recall', kind = 'scatter', c = 'g', label = 'class0_recall', marker = ',', ax = class0_ax)
-    df.plot(x = 'samples', y = 'class0_f1-score', kind = 'scatter', c = 'r', label = 'class0_f1-score', marker = ',', ax = class0_ax)
-    # negdfmeans = df.groupby(by = 'samples')[['class0_precision', 'class0_recall', 'class0_f1-score']].mean().plot(marker = 'o', ls = '-', ax = class0_ax)
+    class0_ax = df.plot(x = 'samples', y = 'accuracy', kind = 'scatter', c = 'b', marker = ',')
+    df.plot(x = 'samples', y = 'class0_precision', kind = 'scatter', c = 'orange', marker = ',', ax = class0_ax)
+    df.plot(x = 'samples', y = 'class0_recall', kind = 'scatter', c = 'g', marker = ',', ax = class0_ax)
+    df.plot(x = 'samples', y = 'class0_f1-score', kind = 'scatter', c = 'r', marker = ',', ax = class0_ax)
+    negdfmeans = df.groupby(['samples'])['accuracy','class0_precision', 'class0_recall', 'class0_f1-score'].mean().plot(marker = 'o', ls = '-', ax = class0_ax)
     class0_ax.set_xlabel("sample size")
     class0_ax.set_ylabel(" class 0: precision, recall, f1-score, and accuracy")
     plt.savefig("./plots/"+filename + "class_0_SVM.png")
     plt.close()
 
     plot3 = plt.figure(3)
-    class1_ax = df.plot(x = 'samples', y = 'accuracy', kind = 'scatter', c = 'b', label = 'accuracy', marker = ',')
-    df.plot(x = 'samples', y = 'class1_precision', kind = 'scatter', c = 'orange', label = 'class1_precision', marker = ',', ax = class1_ax)
-    df.plot(x = 'samples', y = 'class1_recall', kind = 'scatter', c = 'g', label = 'class1_recall', marker = ',', ax = class1_ax)
-    df.plot(x = 'samples', y = 'class1_f1-score', kind = 'scatter', c = 'r', label = 'class1_f1-score', marker = ',', ax = class1_ax)
-    # posdfmeans = df.groupby(by = 'samples')[['class1_precision', 'class1_recall', 'class1_f1-score']].mean().plot(marker = 'o', ls = '-', ax = class1_ax)
+    class1_ax = df.plot(x = 'samples', y = 'accuracy', kind = 'scatter', c = 'b', marker = ',')
+    df.plot(x = 'samples', y = 'class1_precision', kind = 'scatter', c = 'orange', marker = ',', ax = class1_ax)
+    df.plot(x = 'samples', y = 'class1_recall', kind = 'scatter', c = 'g', marker = ',', ax = class1_ax)
+    df.plot(x = 'samples', y = 'class1_f1-score', kind = 'scatter', c = 'r', marker = ',', ax = class1_ax)
+    posdfmeans = df.groupby(['samples'])['accuracy','class1_precision', 'class1_recall', 'class1_f1-score'].mean().plot(marker = 'o', ls = '-', ax = class1_ax)
     class1_ax.set_xlabel("sample size")
     class1_ax.set_ylabel(" class 1: precision, recall, f1-score, and accuracy")
     plt.savefig("./plots/"+filename + "class_1_SVM.png")
@@ -845,11 +843,11 @@ def datasetswitch(csv, limiter = None):
 
 def main():
     random.seed(10019)
-    datasets = ["diabetes.csv"]
+    datasets = ["CleanCOMPAS53.csv","GermanCredit.csv" ]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
-        datasetswitch(dataset, limiter = 100)
+        datasetswitch(dataset, limiter = None)
     # datasetswitch("diabetes.csv") #clusters
     # datasetswitch("adultscensusincome.csv") #clusters
     # datasetswitch("bankmarketing.csv") #clusters
