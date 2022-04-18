@@ -478,10 +478,16 @@ def names(root:TreeNode): #gets all the col names of the node
 
 def rowSize(t): return len(t.leftTable.rows) #gets the size of the rows
 
-def small2Big(root,how=None): # for all of the leaves from smallest to largest print len of rows & median
+def leafmedians(root,how=None): # for all of the leaves from smallest to largest print len of rows & median
+    MedianTable = Table(222)
+    MedianTable.create_cols(root.header)
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
+        mid = [col.mid() for col in t.cols]
+        MedianTable + mid
         #print(len(t.rows), [col.mid() for col in t.cols], t.cols[-1].count)
+    MedianTable.encode_lines()
+    return MedianTable
 
 def getLeafData(root,samples_per_leaf,how=None): # for all of the leaves from smallest to largest print len of rows & median
     EDT = Table(samples_per_leaf)
@@ -707,7 +713,7 @@ def classify(table):
         # cm = confusion_matrix(y_test,y_pred)
         # print(cm)
         cr = classification_report(y_test,y_pred, output_dict = True)
-        # print(cr)
+        # print("i:", i, "cr:", cr)
         cr_data = []
         cr_data.append(len(table.rows))
         cr_data.append(cr['accuracy'])
@@ -716,9 +722,15 @@ def classify(table):
         cr_data.append(cr['0']['recall'])
         cr_data.append(cr['0']['f1-score'])
 
-        cr_data.append(cr['1']['precision'])
-        cr_data.append(cr['1']['recall'])
-        cr_data.append(cr['1']['f1-score'])
+        try:
+            cr_data.append(cr['1']['precision'])
+            cr_data.append(cr['1']['recall'])
+            cr_data.append(cr['1']['f1-score'])
+        except:
+            print("Theres no positive class for this cr...")
+            cr_data.append(0)
+            cr_data.append(0)
+            cr_data.append(0)
 
 
         cr_data.append(cr['macro avg']['precision'])
@@ -774,12 +786,15 @@ def clusterandclassify(csv, limiter = None):
 
     # print("Sorting leaves ...")
     # print("Extrapolated Data Classification... until", (enough//2), "samples")
-    # small2Big(root) #bfs for the leaves gives median row
+    # leafmedians(root) #bfs for the leaves gives median row
     pbar = tqdm(list(range(1,(int(enough*0.75))))) #loading bar
     for samples in pbar:
         pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
-        EDT = getLeafData(root, samples) #get one random point from leaves
-        data[samples] = classify(EDT)
+        MedianTable = leafmedians(root)
+        # print("MT rows:", MedianTable.rows)
+        data[samples] = classify(MedianTable)
+        # EDT = getLeafData(root, samples) #get one random point from leaves
+        # data[samples] = classify(EDT)
 
     for key, v in data.items():
         # print("data dict: " , data)
@@ -789,11 +804,15 @@ def clusterandclassify(csv, limiter = None):
             x_data.append(tmp)
 
     # print("x_data ", x_data)
+    df = pd.DataFrame(x_data, columns=colnames)
+    # print(df.head())
+
+    df.to_csv("./output/"+filename + "_median_SVM.csv", index=False)
 
 
 def main():
     random.seed(10019)
-    datasets = ["diabetes.csv" ]
+    datasets = ["CleanCOMPAS53.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
