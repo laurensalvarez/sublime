@@ -273,13 +273,13 @@ class Table:
                                          index))  # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
                 else:
                     self.skip.append(Sym(''.join(c for c in val), index))
+
             col = None
+
             if val[0].isupper():  # is it a num?
                 col = Num(''.join(c for c in val if not c in ['?', ':']), index)
                 self.nums.append(col)
                 self.cols.append(col)
-
-
 
             else:  # no, it's a sym
                 col = Sym(''.join(c for c in val if not c in ['?', ':']), index)
@@ -298,7 +298,10 @@ class Table:
 
             if "-" not in val and "+" not in val and "!" not in val:  # then it's an x
                 self.x.append(col)
-                self.xnums.append(col)
+                if val[0].isupper():
+                    self.xnums.append(col)
+                else:
+                    self.xsyms.append(col)
 
             if "(" in val:  # is it a protected?
                 self.protected.append(col)
@@ -716,7 +719,7 @@ def classify(table, df, samples):
     # clf = RandomForestClassifier(random_state=0)
 
     # predict
-    for i in range(1, 11):  # split data 80% train 20 % test * 10 times
+    for i in range(1, 3):  # split data 80% train 20 % test * 10 times
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
 
@@ -799,50 +802,60 @@ def clusterandclassify(csv, limiter=None):
 
     # print("Whole Data Classification...")
     table.encode_lines()
-    print(list(table.y[-1].encoder.classes_))
-    columns = deepcopy(table.header)
-    columns.append("predicted")
-    columns.append("samples")
-    df2 = pd.DataFrame(columns=columns)
-    data[len(table.rows)], df2 = classify(table, df2, len(table.rows))
-
-    # print("Clustering ...")
-    enough = int(math.sqrt(len(table.rows)))
-    root = Table.clusters(table.rows, table, enough)
-
-    # print("Sorting leaves ...")
-    # print("Extrapolated Data Classification... until", (enough//2), "samples")
-    # leafmedians(root) #bfs for the leaves gives median row
-    pbar = tqdm(list(range(1, (int(enough * 0.75)))))  # loading bar
-    for samples in pbar:
-        pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
-        MedianTable = leafmedians(root)
-        # print("MT rows:", MedianTable.rows)
-        data[samples], df2 = classify(MedianTable, df2, samples)
-        # EDT = getLeafData(root, samples) #get one random point from leaves
-        # data[samples] = classify(EDT)
-
-    for key, v in data.items():
-        # print("data dict: " , data)
-        for key2 in v.items():
-            # print("key2", key2)
-            tmp = key2[1]
-            x_data.append(tmp)
-
-    # print("x_data ", x_data)
-    df = pd.DataFrame(x_data, columns=colnames)
-    # print(df.head())
-    final_columns = []
     for col in table.protected:
-        final_columns.append(col.name)
-    for col in table.klass:
-        final_columns.append(col.name)
-    final_columns.append("predicted")
-    final_columns.append("samples")
-    final_df = df2[final_columns]
-    final_df.to_csv("./output/" + filename + "_protected_predictions.csv", index=False)
+        print("Protected:", str(col.name))
+        if col in table.syms:
+            print(str(col.name), ":", col.encoder.classes_)
 
-    df.to_csv("./output/" + filename + "_median_SVM.csv", index=False)
+    for col in table.y:
+        if col in table.syms:
+            print(str(col.name), ":", col.encoder.classes_)
+
+    # print(list(table.y[-1].encoder.classes_))
+
+    # columns = deepcopy(table.header)
+    # columns.append("predicted")
+    # columns.append("samples")
+    # df2 = pd.DataFrame(columns=columns)
+    # data[len(table.rows)], df2 = classify(table, df2, len(table.rows))
+    #
+    # # print("Clustering ...")
+    # enough = int(math.sqrt(len(table.rows)))
+    # root = Table.clusters(table.rows, table, enough)
+    #
+    # # print("Sorting leaves ...")
+    # # print("Extrapolated Data Classification... until", (enough//2), "samples")
+    # # leafmedians(root) #bfs for the leaves gives median row
+    # pbar = tqdm(list(range(1, (int(enough * 0.55)))))  # loading bar
+    # for samples in pbar:
+    #     pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
+    #     # MedianTable = leafmedians(root)
+    #     # print("MT rows:", MedianTable.rows)
+    #     # data[samples], df2 = classify(MedianTable, df2, samples)
+    #     EDT = getLeafData(root, samples) #get one random point from leaves
+    #     data[samples], df2 = classify(EDT, df2, samples)
+    #
+    # for key, v in data.items():
+    #     # print("data dict: " , data)
+    #     for key2 in v.items():
+    #         # print("key2", key2)
+    #         tmp = key2[1]
+    #         x_data.append(tmp)
+    #
+    # # print("x_data ", x_data)
+    # df = pd.DataFrame(x_data, columns=colnames)
+    # # print(df.head())
+    # final_columns = []
+    # for col in table.protected:
+    #     final_columns.append(col.name)
+    # for col in table.klass:
+    #     final_columns.append(col.name)
+    # final_columns.append("predicted")
+    # final_columns.append("samples")
+    # final_df = df2[final_columns]
+    # final_df.to_csv("./output/" + filename + "_protected_predictions2.csv", index=False)
+    #
+    # df.to_csv("./output/" + filename + "_rand_3_55per_SVM.csv", index=False)
 
 
 def main():
