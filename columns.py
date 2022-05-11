@@ -1,6 +1,6 @@
+
 from collections import defaultdict
 from copy import deepcopy
-
 from sklearn import preprocessing
 import math
 import re
@@ -593,100 +593,6 @@ def isValid(self, row):
 
 
 # ------------------------------------------------------------------------------
-# Evaluation Metrics
-# ------------------------------------------------------------------------------
-# class Abcd:
-#   def __init__(i,db="all",rx="all"):
-#     i.db = db; i.rx=rx;
-#     i.yes = i.no = 0
-#     i.known = {}; i.a= {}; i.b= {}; i.c= {}; i.d= {}
-#
-#   def __call__(i,actual=None,predicted=None):
-#     return i.keep(actual,predicted)
-#
-#   def tell(i,actual,predict):
-#     i.knowns(actual)
-#     i.knowns(predict)
-#     if actual == predict: i.yes += 1
-#     else                :  i.no += 1
-#     for x in  i.known:
-#       if actual == x:
-#         if  predict == actual: i.d[x] += 1
-#         else                 : i.b[x] += 1
-#       else:
-#         if  predict == x     : i.c[x] += 1
-#         else                 : i.a[x] += 1
-#
-#   def knowns(i,x):
-#     if not x in i.known:
-#       i.known[x]= i.a[x]= i.b[x]= i.c[x]= i.d[x]= 0.0
-#     i.known[x] += 1
-#     if (i.known[x] == 1):
-#       i.a[x] = i.yes + i.no
-#
-#   def header(i):
-#     print("#",('{0:20s} {1:11s}  {2:4s}  {3:4s} {4:4s} '+ \
-#            '{5:4s}{6:4s} {7:3s} {8:3s} {9:3s} '+ \
-#            '{10:3s} {11:3s}{12:3s}{13:10s}').format(
-#       "db", "rx",
-#      "n", "a","b","c","d","acc","pd","pf","prec",
-#       "f","g","class"))
-#     print('-'*100)
-#
-#   def ask(i):
-#     def p(y) : return int(100*y + 0.5)
-#     def n(y) : return int(y)
-#     pd = pf = pn = prec = g = f = acc = 0
-#     for x in i.known:
-#       a= i.a[x]; b= i.b[x]; c= i.c[x]; d= i.d[x]
-#       if (b+d)    : pd   = d     / (b+d)
-#       if (a+c)    : pf   = c     / (a+c)
-#       if (a+c)    : pn   = (b+d) / (a+c)
-#       if (c+d)    : prec = d     / (c+d)
-#       if (1-pf+pd): g    = 2*(1-pf)*pd / (1-pf+pd)
-#       if (prec+pd): f    = 2*prec*pd/(prec+pd)
-#       if (i.yes + i.no): acc= i.yes/(i.yes+i.no)
-#       print("#",('{0:20s} {1:10s} {2:4d} {3:4d} {4:4d} '+ \
-#           '{5:4d} {6:4d} {7:4d} {8:3d} {9:3d} '+ \
-#          '{10:3d} {11:3d} {12:3d} {13:10s}').format(i.db,
-#           i.rx,  n(b + d), n(a), n(b),n(c), n(d),
-#           p(acc), p(pd), p(pf), p(prec), p(f), p(g),x))
-#       #print x,p(pd),p(prec)
-
-
-# ------------------------------------------------------------------------------
-# Tests
-# ------------------------------------------------------------------------------
-# def test_num(): #copied Dr.M's test
-#     test_data = []
-#     for i in range(100):
-#         test_data.append(random.random())
-#     n = Num(11, 11, data=test_data)
-#     #print("n.diversity():", str(n.diversity()))
-#     assert .25 <= n.diversity() <= .31, "in range" #changed range check (confirm is this is okay to do)
-#     # assert n.dist(), "num distance"
-#
-# def test_sym():
-#     test_data = ["a","a","a","a","b","b","c"]
-#     s = Sym(12,12, data = test_data)
-#     #print("s.diversity():", str(s.diversity()))
-#     assert 1.37 <= s.diversity() <= 1.38, "entropy"
-#     assert 'a'  == s.mid(), "mode"
-#     assert 0 == s.dist('a','a'), "same sym distance"
-#     assert 1 == s.dist('a','b'), "diff sym distance"
-#
-# def test_rows():
-#      lines = Table.readfile("test.csv")
-#     table = Table(0)
-#     ls = table.linemaker(lines)
-#     for line in ls:
-#         table + line
-#     num_rows = len(lines)
-#     #print("num_rows:", num_rows) #count includes the header
-#     assert 101 == num_rows, "counting rows"
-
-
-# ------------------------------------------------------------------------------
 # Classifier
 # ------------------------------------------------------------------------------
 # Standard scientific Python imports
@@ -696,6 +602,7 @@ from sklearn import preprocessing
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 
 
 def classify(table, df, samples):
@@ -716,16 +623,18 @@ def classify(table, df, samples):
 
     # create svm
 
-    # clf = RandomForestClassifier(random_state=0)
+
 
     # predict
-    for i in range(1, 3):  # split data 80% train 20 % test * 10 times
+    for i in range(1, 21):  # split data 80% train 20 % test * 10 times
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
-
-        svclassifier = SVC(kernel='linear')
-        svclassifier.fit(X_train, y_train)
-        y_pred = svclassifier.predict(X_test)
+        #LR RF SVC
+        # clf = LogisticRegression(random_state=0)
+        # clf = RandomForestClassifier(random_state=0)
+        clf = SVC(kernel='linear')
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict(X_test)
 
 
 
@@ -802,69 +711,76 @@ def clusterandclassify(csv, limiter=None):
 
     # print("Whole Data Classification...")
     table.encode_lines()
-    for col in table.protected:
-        print("Protected:", str(col.name))
-        if col in table.syms:
-            print(str(col.name), ":", col.encoder.classes_)
-
-    for col in table.y:
-        if col in table.syms:
-            print(str(col.name), ":", col.encoder.classes_)
-
-    # print(list(table.y[-1].encoder.classes_))
-
-    # columns = deepcopy(table.header)
-    # columns.append("predicted")
-    # columns.append("samples")
-    # df2 = pd.DataFrame(columns=columns)
-    # data[len(table.rows)], df2 = classify(table, df2, len(table.rows))
-    #
-    # # print("Clustering ...")
-    # enough = int(math.sqrt(len(table.rows)))
-    # root = Table.clusters(table.rows, table, enough)
-    #
-    # # print("Sorting leaves ...")
-    # # print("Extrapolated Data Classification... until", (enough//2), "samples")
-    # # leafmedians(root) #bfs for the leaves gives median row
-    # pbar = tqdm(list(range(1, (int(enough * 0.55)))))  # loading bar
-    # for samples in pbar:
-    #     pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
-    #     # MedianTable = leafmedians(root)
-    #     # print("MT rows:", MedianTable.rows)
-    #     # data[samples], df2 = classify(MedianTable, df2, samples)
-    #     EDT = getLeafData(root, samples) #get one random point from leaves
-    #     data[samples], df2 = classify(EDT, df2, samples)
-    #
-    # for key, v in data.items():
-    #     # print("data dict: " , data)
-    #     for key2 in v.items():
-    #         # print("key2", key2)
-    #         tmp = key2[1]
-    #         x_data.append(tmp)
-    #
-    # # print("x_data ", x_data)
-    # df = pd.DataFrame(x_data, columns=colnames)
-    # # print(df.head())
-    # final_columns = []
     # for col in table.protected:
-    #     final_columns.append(col.name)
-    # for col in table.klass:
-    #     final_columns.append(col.name)
-    # final_columns.append("predicted")
-    # final_columns.append("samples")
-    # final_df = df2[final_columns]
-    # final_df.to_csv("./output/" + filename + "_protected_predictions2.csv", index=False)
+    #     print("Protected:", str(col.name))
+    #     if col in table.syms:
+    #         print(str(col.name), ":", col.encoder.classes_)
     #
-    # df.to_csv("./output/" + filename + "_rand_3_55per_SVM.csv", index=False)
+    # for col in table.y:
+    #     if col in table.syms:
+    #         print(str(col.name), ":", col.encoder.classes_)
 
+    print(list(table.y[-1].encoder.classes_))
+
+    columns = deepcopy(table.header)
+    columns.append("predicted")
+    columns.append("samples")
+    df2 = pd.DataFrame(columns=columns)
+    data[len(table.rows)], df2 = classify(table, df2, len(table.rows))
+
+    # print("Clustering ...")
+    enough = int(math.sqrt(len(table.rows)))
+    root = Table.clusters(table.rows, table, enough)
+
+    # print("Sorting leaves ...")
+    # print("Extrapolated Data Classification... until", (enough//2), "samples")
+    # leafmedians(root) #bfs for the leaves gives median row
+    treatments = [1,2,3,5]
+    # pbar = tqdm(list(range(1, (int(enough * 0.55)))))  # loading bar
+    pbar = tqdm(treatments)  # loading bar
+    for samples in pbar:
+        pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
+        # MedianTable = leafmedians(root)
+        # print("MT rows:", MedianTable.rows)
+        # data[samples], df2 = classify(MedianTable, df2, samples)
+        EDT = getLeafData(root, samples) #get one random point from leaves
+        data[samples], df2 = classify(EDT, df2, samples)
+
+    for key, v in data.items():
+        # print("data dict: " , data)
+        for key2 in v.items():
+            # print("key2", key2)
+            tmp = key2[1]
+            x_data.append(tmp)
+
+    # print("x_data ", x_data)
+    df = pd.DataFrame(x_data, columns=colnames)
+    # print(df.head())
+    final_columns = []
+    for col in table.protected:
+        final_columns.append(col.name)
+    for col in table.klass:
+        final_columns.append(col.name)
+    final_columns.append("predicted")
+    final_columns.append("samples")
+    final_df = df2[final_columns]
+    final_df.to_csv("./output/" + filename + "_protected_predictions_SVM_testing.csv", index=False)
+
+    df.to_csv("./output/" + filename + "_rand_4treats_SVM_testing.csv", index=False)
+
+import cProfile
 
 def main():
     random.seed(10019)
-    datasets = ["GermanCredit.csv"]
+    datasets = ["CleanCOMPAS53.csv"]
     pbar = tqdm(datasets)
+
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
+
         clusterandclassify(dataset, limiter=1000)
+
+
     # clusterandclassify("diabetes.csv") #clusters
     # clusterandclassify("adultscensusincome.csv") #clusters
     # clusterandclassify("bankmarketing.csv") #clusters
@@ -877,4 +793,8 @@ def main():
 
 # self = options(__doc__)
 if __name__ == '__main__':
+    pr = cProfile.Profile()
+    pr.enable()
     main()
+    pr.disable()
+    pr.print_stats(sort='time')

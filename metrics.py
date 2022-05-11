@@ -146,7 +146,7 @@ def main():
 
         fulldf = pd.DataFrame(rows, columns = ['recall', 'precision', 'accuracy', 'F1 Score', 'AOD', 'EOD', 'SPD','feature', 'sample size'])
 
-        fulldf.to_csv("./metrics/" + filename + "_allmetrics.csv", index=False)
+        fulldf.to_csv("./metrics/" + filename + "_SVM_metrics.csv", index=False)
 
 
 
