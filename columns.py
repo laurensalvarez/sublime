@@ -630,9 +630,9 @@ def classify(table, df, samples):
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
         #LR RF SVC
-        # clf = LogisticRegression(random_state=0)
+        clf = LogisticRegression(random_state=0)
         # clf = RandomForestClassifier(random_state=0)
-        clf = SVC(kernel='linear')
+        # clf = SVC(kernel='linear')
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
 
@@ -735,16 +735,17 @@ def clusterandclassify(csv, limiter=None):
     # print("Sorting leaves ...")
     # print("Extrapolated Data Classification... until", (enough//2), "samples")
     # leafmedians(root) #bfs for the leaves gives median row
-    treatments = [1,2,3,5]
+    # treatments = [1,2,3,5]
     # pbar = tqdm(list(range(1, (int(enough * 0.55)))))  # loading bar
-    pbar = tqdm(treatments)  # loading bar
+    list12 = [1]
+    pbar = tqdm(list12)  # loading bar
     for samples in pbar:
         pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
-        # MedianTable = leafmedians(root)
+        MedianTable = leafmedians(root)
         # print("MT rows:", MedianTable.rows)
-        # data[samples], df2 = classify(MedianTable, df2, samples)
-        EDT = getLeafData(root, samples) #get one random point from leaves
-        data[samples], df2 = classify(EDT, df2, samples)
+        data[samples], df2 = classify(MedianTable, df2, samples)
+        # EDT = getLeafData(root, samples) #get x random point(s) from leaf clusters
+        # data[samples], df2 = classify(EDT, df2, samples)
 
     for key, v in data.items():
         # print("data dict: " , data)
@@ -764,15 +765,15 @@ def clusterandclassify(csv, limiter=None):
     final_columns.append("predicted")
     final_columns.append("samples")
     final_df = df2[final_columns]
-    final_df.to_csv("./output/" + filename + "_protected_predictions_SVM_testing.csv", index=False)
+    final_df.to_csv("./output/" + filename + "_protected_predictions_median_LR_testing.csv", index=False)
 
-    df.to_csv("./output/" + filename + "_rand_4treats_SVM_testing.csv", index=False)
+    df.to_csv("./output/" + filename + "_median_20runs_LR_testing.csv", index=False)
 
 import cProfile
 
 def main():
     random.seed(10019)
-    datasets = ["CleanCOMPAS53.csv"]
+    datasets = ["diabetes.csv", "GermanCredit.csv", "CleanCOMPAS53.csv"]
     pbar = tqdm(datasets)
 
     for dataset in pbar:
@@ -793,8 +794,8 @@ def main():
 
 # self = options(__doc__)
 if __name__ == '__main__':
-    pr = cProfile.Profile()
-    pr.enable()
+    # pr = cProfile.Profile()
+    # pr.enable()
     main()
-    pr.disable()
-    pr.print_stats(sort='time')
+    # pr.disable()
+    # pr.print_stats(sort='time')

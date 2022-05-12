@@ -102,7 +102,7 @@ def main():
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        predlines = Table.readfile(r'./output/' + filename + "_protected_predictions2.csv")
+        predlines = Table.readfile(r'./output/' + filename + "_protected_predictions_median_SVM_testing.csv")
 
         predtable = Table(2)
         predtable + predlines[0]
@@ -146,7 +146,7 @@ def main():
 
         fulldf = pd.DataFrame(rows, columns = ['recall', 'precision', 'accuracy', 'F1 Score', 'AOD', 'EOD', 'SPD','feature', 'sample size'])
 
-        fulldf.to_csv("./metrics/" + filename + "_SVM_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/medians" + filename + "median_SVM_metrics.csv", index=False)
 
 
 
