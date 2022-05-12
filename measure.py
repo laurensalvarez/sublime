@@ -66,6 +66,12 @@ def get_counts(test_df, y_pred, y_true, biased_col, metric):
         return calculate_FPR_difference(a, b, c, d, e, f, g, h)
     elif metric == "SPD":
     	return calculate_SPD(a, b, c, d, e, f, g, h)
+    elif metric == "FA0":
+        return calculate_false_alarm(a,d,c,b)
+    elif metric == "FA1":
+        return calculate_false_alarm(e,h,g,f)
+
+
 
 
 
@@ -96,6 +102,13 @@ def calculate_FPR_difference(TP_0 , TN_0, FN_0,FP_0, TP_1 , TN_1 , FN_1,  FP_1):
     FPR_1 = FP_1/(FP_1+TN_1)
     diff = (FPR_0 - FPR_1)
     return round(diff,2)
+
+def calculate_false_alarm(TP,FP,FN,TN):
+    if (TP + FN) != 0:
+        alarm = FN / (FN + TP)
+    else:
+        alarm = 0
+    return round(alarm,2)
 
 def calculate_recall(TP,FP,FN,TN):
     if (TP + FN) != 0:

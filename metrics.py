@@ -27,6 +27,8 @@ def getMetrics(test_df, y_true, y_pred, biased_col, samples):
     AOD = measure_final_score(test_df, y_true, y_pred, biased_col, 'aod')
     EOD =measure_final_score(test_df, y_true, y_pred, biased_col, 'eod')
     SPD = measure_final_score(test_df, y_true, y_pred, biased_col, 'SPD')
+    FA0 = measure_final_score(test_df, y_true, y_pred, biased_col, 'FA0')
+    FA1 = measure_final_score(test_df, y_true, y_pred, biased_col, 'FA1')
 
     # print("recall :", recall)
     # print("precision :", precision)
@@ -36,7 +38,7 @@ def getMetrics(test_df, y_true, y_pred, biased_col, samples):
     # print("EOD :" + biased_col , EOD)
     # print("SPD:", SPD)
 
-    return [recall, precision, accuracy, F1, AOD, EOD, SPD, biased_col, samples]
+    return [recall, precision, accuracy, F1, AOD, EOD, SPD, FA0, FA1, biased_col, samples]
 
 
 def makeBinary(preddf, dataset):
@@ -102,7 +104,7 @@ def main():
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        predlines = Table.readfile(r'./output/' + filename + "_protected_predictions_median_SVM_testing.csv")
+        predlines = Table.readfile(r'./output/' + filename + "_protected_predictions_RF_testing.csv")
 
         predtable = Table(2)
         predtable + predlines[0]
@@ -144,9 +146,9 @@ def main():
                 print(tmp)
                 rows.append(tmp)
 
-        fulldf = pd.DataFrame(rows, columns = ['recall', 'precision', 'accuracy', 'F1 Score', 'AOD', 'EOD', 'SPD','feature', 'sample size'])
+        fulldf = pd.DataFrame(rows, columns = ['recall', 'precision', 'accuracy', 'F1 Score', 'AOD', 'EOD', 'SPD', 'FA0', 'FA1', 'feature', 'sample size'])
 
-        fulldf.to_csv("./metrics/medians" + filename + "median_SVM_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/" + filename + "_RF_metrics.csv", index=False)
 
 
 

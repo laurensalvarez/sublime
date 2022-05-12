@@ -1,4 +1,4 @@
-Age(,class!,predicted,samples
+Age(,!Probability,predicted,samples
 21,0,0,768
 28,1,0,768
 39,1,1,768

@@ -1,4 +1,4 @@
-sex(,Age(,race(,!Two_year_recid,predicted,samples
+sex(,Age(,race(,!Probability,predicted,samples
 1,22,0,1,1,957
 1,39,0,0,0,957
 1,25,0,0,0,957
