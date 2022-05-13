@@ -348,11 +348,22 @@ def bsTest(n=1000,mu1=10,sigma1=1,mu2=10.2,sigma2=1):
 #     print(n*5)
 #     Rx.show(Rx.sk(skDemo(n)))
 #     n*=5
-
+from tqdm import tqdm
 
 if __name__ == "__main__":
   random.seed(1)
-  Rx.fileIn("COMPAS53_Recall.csv")
+  datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+  metrics = ['recall', 'prec', 'acc', 'F1', 'AOD', 'EOD', 'SPD', 'FA0', 'FA1']
+  pbar = tqdm(datasets)
+  for dataset in pbar:
+      pbar.set_description("Processing %s" % dataset)
+      filename = dataset[:-4]
+      for m in metrics:
+          print("\n" + filename +"-" + m + "\n"  )
+          Rx.fileIn("./sk_data/RF/" + filename + "_RF_" + m +"_all.csv")
+
+
+
   # print("-"*50)
   # Rx.fileIn("sk2.csv",lo=0,hi=100)
   # print("-"*50)
