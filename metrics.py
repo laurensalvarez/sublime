@@ -16,9 +16,12 @@ from columns import Table, Col, Sym, Num
 ###############################################
 
 # normal matrix
-def getMetrics(test_df, y_true, y_pred, biased_col, samples):
-
-    TN, FP, FN, TP = confusion_matrix(y_true,y_pred).ravel()
+def getMetrics(test_df, y_true, y_pred, biased_col, samples, run_num):
+    # print("samples", samples, "run_num", run_num)
+    # print("y_true:", y_true,"\n", "y_pred:", y_pred, "\n")
+    # cm = confusion_matrix(y_true,y_pred,labels=[0, 1])
+    # # print(cm)
+    # TN, FP, FN, TP = cm.ravel()
 
     recall = measure_final_score(test_df, y_true, y_pred, biased_col, 'recall')
     precision = measure_final_score(test_df, y_true, y_pred, biased_col, 'precision')
@@ -38,7 +41,7 @@ def getMetrics(test_df, y_true, y_pred, biased_col, samples):
     # print("EOD :" + biased_col , EOD)
     # print("SPD:", SPD)
 
-    return [recall, precision, accuracy, F1, AOD, EOD, SPD, FA0, FA1, biased_col, samples]
+    return [recall, precision, accuracy, F1, AOD, EOD, SPD, FA0, FA1, biased_col, samples, run_num]
 
 
 def makeBinary(preddf, dataset):
@@ -78,7 +81,7 @@ def getBiasCols(dataset):
         bias_cols = ["sex(", "Age(","race("]
 
     if dataset == "GermanCredit":
-        bias_cols = ["savings(", "sex(" , "Age(", "foreign_worker("]
+        bias_cols = ["Credit_amount(","savings(", "sex(" , "Age(", "foreign_worker("]
 
     if dataset == "diabetes":
         bias_cols = ["Age("]
@@ -86,25 +89,25 @@ def getBiasCols(dataset):
     return bias_cols
 
 
-def sampleMetrics(test_df, y_true, y_pred, biased_cols, samples):
+def sampleMetrics(test_df, y_true, y_pred, biased_cols, samples, run_num):
     colmetrics = {}
 
     for i in biased_cols:
-        colmetrics[i] = getMetrics(test_df, y_true, y_pred, i, samples)
-
+        # print(test_df, y_true, y_pred, i, samples, run_num)
+        colmetrics[i] = getMetrics(test_df, y_true, y_pred, i, samples, run_num)
     return colmetrics
 
 ###############################################
 ###
 ###############################################
 def main():
-    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    datasets = ["GermanCredit.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        predlines = Table.readfile(r'./output/' + filename + "_protected_predictions_RF_testing.csv")
+        predlines = Table.readfile(r'./output/' + filename + "_pp_RF_all.csv")
 
         predtable = Table(2)
         predtable + predlines[0]
@@ -128,27 +131,38 @@ def main():
         samples = copy.deepcopy(bintdf["samples"].tolist())
         sortedsamples = sorted(set(samples), key = lambda ele: samples.count(ele))
 
+
         all_metrics = {}
         rows = []
+
         for s in sortedsamples:
             print("Metrics for", s, "samples: \n")
             dfs = copy.deepcopy(bintdf)
             dfs.drop(dfs.loc[dfs['samples']!= s].index, inplace=True)
-            y_true = dfs["!Probability"]
-            y_pred = dfs["predicted"]
-            all_metrics[s] = sampleMetrics(dfs, y_true, y_pred, biased_cols, s)
+            list = []
+            for i in range(1,21):
+
+                dfr = copy.deepcopy(dfs)
+                dfr.drop(dfs.loc[dfs['run_num']!= i].index, inplace=True)
+                y_true = dfr["!Probability"]
+                y_pred = dfr["predicted"]
+                # print(dfr)
+                # rnum = dfs["run_num"]
+                list.insert(i, sampleMetrics(dfr, y_true, y_pred, biased_cols, s, i))
+            all_metrics[s] = list
+            # print("all_metrics:", all_metrics)
 
         for key, v in all_metrics.items():
-            # print("data dict: " , data)
-            for key2 in v.items():
-                # print("key2", key2)
-                tmp = key2[1]
-                print(tmp)
-                rows.append(tmp)
+            # print("data dict: " , key, "v:", v)
+            for i in range(len(v)):
+                for key2, v2 in v[i].items():
+                    tmp = v2
+                    # print(tmp)
+                    rows.append(tmp)
 
-        fulldf = pd.DataFrame(rows, columns = ['recall', 'precision', 'accuracy', 'F1 Score', 'AOD', 'EOD', 'SPD', 'FA0', 'FA1', 'feature', 'sample size'])
+        fulldf = pd.DataFrame(rows, columns = ['recall', 'precision', 'accuracy', 'F1_Score', 'AOD', 'EOD', 'SPD', 'FA0', 'FA1', 'feature', 'sample_size', 'run_num'])
 
-        fulldf.to_csv("./metrics/" + filename + "_RF_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/" + filename + "_RF_cmetrics.csv", index=False)
 
 
 

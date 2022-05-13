@@ -12,6 +12,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+# from measure import measure_final_score,calculate_recall,calculate_precision,calculate_accuracy
+# from metrics import getMetrics
 
 
 # ------------------------------------------------------------------------------
@@ -630,44 +632,12 @@ def classify(table, df, samples):
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
         #LR RF SVC
-        clf = LogisticRegression(random_state=0)
-        # clf = RandomForestClassifier(random_state=0)
+        # clf = LogisticRegression(random_state=0)
+        clf = RandomForestClassifier(random_state=0)
         # clf = SVC(kernel='linear')
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
 
-
-
-        # evaluation
-        # cm = confusion_matrix(y_test,y_pred)
-        # print(cm)
-        cr = classification_report(y_test, y_pred, output_dict=True)
-        # print("i:", i, "cr:", cr)
-        cr_data = []
-        cr_data.append(len(table.rows))
-        cr_data.append(cr['accuracy'])
-        # cr_data.append(cr['macro avg']['support'])
-        cr_data.append(cr['0']['precision'])
-        cr_data.append(cr['0']['recall'])
-        cr_data.append(cr['0']['f1-score'])
-
-        try:
-            cr_data.append(cr['1']['precision'])
-            cr_data.append(cr['1']['recall'])
-            cr_data.append(cr['1']['f1-score'])
-        except:
-            print("Theres no positive class for this cr...")
-            cr_data.append(0)
-            cr_data.append(0)
-            cr_data.append(0)
-
-        cr_data.append(cr['macro avg']['precision'])
-        cr_data.append(cr['macro avg']['recall'])
-        cr_data.append(cr['macro avg']['f1-score'])
-        # cr_data.append(cr['weighted avg']['precision'])
-        # cr_data.append(cr['weighted avg']['recall'])
-        # cr_data.append(cr['weighted avg']['f1-score'])
-        all_data[i] = cr_data
 
         full = []
         for x in X_test:
@@ -676,13 +646,14 @@ def classify(table, df, samples):
             full[j].append(y_test[j])
             full[j].append(y_pred[j])
             full[j].append(samples)
+            full[j].append(i)
         for row in full:
             a_series = pd.Series(row, index=df.columns)
             df = df.append(a_series, ignore_index=True)
 
     # print(cr)
 
-    return all_data, df
+    return df
 
 
 # ------------------------------------------------------------------------------
@@ -693,9 +664,9 @@ def clusterandclassify(csv, limiter=None):
     dataset = csv
     filename = dataset[:-4]  # cut off the .csv
     # colnames = ['accuracy', 'support', 'precision', 'recall', 'f1-score', 'precision_weighted', 'recall_weighted', 'f1-score_weighted', 'samples']
-    colnames = ['samples', 'accuracy', 'class0_precision', 'class0_recall',
-                'class0_f1-score', 'class1_precision', 'class1_recall', 'class1_f1-score', 'macro_precision',
-                'macro_recall', 'macro_f1-score']
+    # colnames = ['samples', 'accuracy', 'class0_precision', 'class0_recall',
+                # 'class0_f1-score', 'class1_precision', 'class1_recall', 'class1_f1-score', 'macro_precision',
+                # 'macro_recall', 'macro_f1-score']
     data = {}
     x_data = []
 
@@ -725,8 +696,9 @@ def clusterandclassify(csv, limiter=None):
     columns = deepcopy(table.header)
     columns.append("predicted")
     columns.append("samples")
+    columns.append("run_num")
     df2 = pd.DataFrame(columns=columns)
-    data[len(table.rows)], df2 = classify(table, df2, len(table.rows))
+    df2 = classify(table, df2, len(table.rows))
 
     # print("Clustering ...")
     enough = int(math.sqrt(len(table.rows)))
@@ -735,27 +707,29 @@ def clusterandclassify(csv, limiter=None):
     # print("Sorting leaves ...")
     # print("Extrapolated Data Classification... until", (enough//2), "samples")
     # leafmedians(root) #bfs for the leaves gives median row
-    # treatments = [1,2,3,5]
+    treatments = [1,2,3,5]
     # pbar = tqdm(list(range(1, (int(enough * 0.55)))))  # loading bar
-    list12 = [1]
-    pbar = tqdm(list12)  # loading bar
+    # list12 = [1]
+    pbar = tqdm(treatments)  # loading bar
     for samples in pbar:
         pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
-        MedianTable = leafmedians(root)
-        # print("MT rows:", MedianTable.rows)
-        data[samples], df2 = classify(MedianTable, df2, samples)
-        # EDT = getLeafData(root, samples) #get x random point(s) from leaf clusters
-        # data[samples], df2 = classify(EDT, df2, samples)
+        if samples == 1:
+            MedianTable = leafmedians(root)
+            # print("MT rows:", MedianTable.rows)
+            df2 = classify(MedianTable, df2, samples)
+        else:
+            EDT = getLeafData(root, samples) #get x random point(s) from leaf clusters
+            df2 = classify(EDT, df2, samples)
 
-    for key, v in data.items():
-        # print("data dict: " , data)
-        for key2 in v.items():
-            # print("key2", key2)
-            tmp = key2[1]
-            x_data.append(tmp)
+    # for key, v in data.items():
+    #     # print("data dict: " , data)
+    #     for key2 in v.items():
+    #         # print("key2", key2)
+    #         tmp = key2[1]
+    #         x_data.append(tmp)
 
     # print("x_data ", x_data)
-    df = pd.DataFrame(x_data, columns=colnames)
+    # df = pd.DataFrame(x_data, columns=colnames)
     # print(df.head())
     final_columns = []
     for col in table.protected:
@@ -764,16 +738,17 @@ def clusterandclassify(csv, limiter=None):
         final_columns.append(col.name)
     final_columns.append("predicted")
     final_columns.append("samples")
+    final_columns.append("run_num")
     final_df = df2[final_columns]
-    final_df.to_csv("./output/" + filename + "_protected_predictions_median_LR_testing.csv", index=False)
+    final_df.to_csv("./output/" + filename + "_pp_RF_all.csv", index=False)
 
-    df.to_csv("./output/" + filename + "_median_20runs_LR_testing.csv", index=False)
+    # df.to_csv("./output/" + filename + "_median_20runs_LR_testing.csv", index=False)
 
 import cProfile
 
 def main():
     random.seed(10019)
-    datasets = ["diabetes.csv", "GermanCredit.csv", "CleanCOMPAS53.csv"]
+    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
 
     for dataset in pbar:

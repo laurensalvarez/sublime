@@ -5,7 +5,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 
 def get_counts(test_df, y_pred, y_true, biased_col, metric):
 
-    TN, FP, FN, TP = confusion_matrix(y_true,y_pred).ravel()
+    TN, FP, FN, TP = confusion_matrix(y_true,y_pred,labels=[0, 1]).ravel()
 
 
     test_df_copy = copy.deepcopy(test_df)
@@ -92,14 +92,28 @@ def calculate_equal_opportunity_difference(TP_0 , TN_0, FN_0,FP_0, TP_1 , TN_1 ,
     return calculate_TPR_difference(TP_0 , TN_0, FN_0,FP_0, TP_1 , TN_1 , FN_1,  FP_1)
 
 def calculate_TPR_difference(TP_0 , TN_0, FN_0,FP_0, TP_1 , TN_1 , FN_1,  FP_1):
-    TPR_0 = TP_0/(TP_0+FN_0)
-    TPR_1 = TP_1/(TP_1+FN_1)
+    if (TP_0+FN_0) != 0:
+        TPR_0 = TP_0/(TP_0+FN_0)
+    else:
+        TPR_0 = 0
+
+    if (TP_1+FN_1) != 0:
+        TPR_1 = TP_1/(TP_1+FN_1)
+    else:
+        TPR_1 = 0
+
     diff = (TPR_0 - TPR_1)
     return round(diff,2)
 
 def calculate_FPR_difference(TP_0 , TN_0, FN_0,FP_0, TP_1 , TN_1 , FN_1,  FP_1):
-    FPR_0 = FP_0/(FP_0+TN_0)
-    FPR_1 = FP_1/(FP_1+TN_1)
+    if (FP_0+TN_0) != 0:
+        FPR_0 = FP_0/(FP_0+TN_0)
+    else:
+        FPR_0 = 0
+    if (FP_1+TN_1) != 0:
+        FPR_1 = FP_1/(FP_1+TN_1)
+    else:
+        FPR_1 = 0
     diff = (FPR_0 - FPR_1)
     return round(diff,2)
 
@@ -127,7 +141,10 @@ def calculate_precision(TP,FP,FN,TN):
 def calculate_F1(TP,FP,FN,TN):
     precision = calculate_precision(TP,FP,FN,TN)
     recall = calculate_recall(TP,FP,FN,TN)
-    F1 = (2 * precision * recall)/(precision + recall)
+    if (precision + recall) != 0:
+        F1 = (2 * precision * recall)/(precision + recall)
+    else:
+        F1 = 0
     return round(F1,2)
 
 def calculate_accuracy(TP,FP,FN,TN):
