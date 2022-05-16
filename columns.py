@@ -633,7 +633,7 @@ def classify(table, df, samples):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
         #LR RF SVC
         # clf = LogisticRegression(random_state=0)
-        clf = RandomForestClassifier(random_state=0)
+        # clf = RandomForestClassifier(random_state=0)
         # clf = SVC(kernel='linear')
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
@@ -740,7 +740,7 @@ def clusterandclassify(csv, limiter=None):
     final_columns.append("samples")
     final_columns.append("run_num")
     final_df = df2[final_columns]
-    final_df.to_csv("./output/" + filename + "_pp_RF_all.csv", index=False)
+    final_df.to_csv("./output/" + filename + "_lime_RF_all.csv", index=False)
 
     # df.to_csv("./output/" + filename + "_median_20runs_LR_testing.csv", index=False)
 

@@ -101,13 +101,13 @@ def sampleMetrics(test_df, y_true, y_pred, biased_cols, samples, run_num):
 ###
 ###############################################
 def main():
-    datasets = ["GermanCredit.csv"]
+    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        predlines = Table.readfile(r'./output/' + filename + "_pp_RF_all.csv")
+        predlines = Table.readfile(r'./output/' + filename + "_pp_SVM_all.csv")
 
         predtable = Table(2)
         predtable + predlines[0]
@@ -162,7 +162,7 @@ def main():
 
         fulldf = pd.DataFrame(rows, columns = ['recall', 'precision', 'accuracy', 'F1_Score', 'AOD', 'EOD', 'SPD', 'FA0', 'FA1', 'feature', 'sample_size', 'run_num'])
 
-        fulldf.to_csv("./metrics/" + filename + "_RF_cmetrics.csv", index=False)
+        fulldf.to_csv("./metrics/" + filename + "_SVM_cmetrics.csv", index=False)
 
 
 

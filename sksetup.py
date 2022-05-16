@@ -12,7 +12,7 @@ def main():
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
         filename = dataset[:-4]
-        df = pd.read_csv(r'./metrics/copies/' + filename + "_RF_cmetrics.csv")
+        df = pd.read_csv(r'./metrics/copies/' + filename + "_SVM_cmetrics.csv")
 
         df1 = copy.deepcopy(df)
         # df15 = df1.head(3)
@@ -115,39 +115,39 @@ def main():
 
         recall_df = pd.DataFrame(reformed_recalldict)
         recall_df.columns = ['_'.join(map(str, x)) for x in recall_df.columns]
-        recall_df.transpose().to_csv("./sk_data/RF/" + filename + "_RF_recall_all.csv", header = None, index=True, sep=' ')
+        recall_df.transpose().to_csv("./sk_data/RF/" + filename + "_SVM_recall_all.csv", header = None, index=True, sep=' ')
 
         prec_df = pd.DataFrame(reformed_predict)
         prec_df.columns = ['_'.join(map(str, x)) for x in prec_df.columns]
-        prec_df.transpose().to_csv("./sk_data/RF/" + filename + "_RF_prec_all.csv", header = None, index=True, sep=' ')
+        prec_df.transpose().to_csv("./sk_data/RF/" + filename + "_SVM_prec_all.csv", header = None, index=True, sep=' ')
 
         acc_df = pd.DataFrame(reformed_accdict)
         acc_df.columns = ['_'.join(map(str, x)) for x in acc_df.columns]
-        acc_df.transpose().to_csv("./sk_data/RF/" + filename + "_RF_acc_all.csv", header = None, index=True, sep=' ')
+        acc_df.transpose().to_csv("./sk_data/RF/" + filename + "_SVM_acc_all.csv", header = None, index=True, sep=' ')
 
         F1_df = pd.DataFrame(reformed_F1dict)
         F1_df.columns = ['_'.join(map(str, x)) for x in F1_df.columns]
-        F1_df.transpose().to_csv("./sk_data/RF/" + filename + "_RF_F1_all.csv", header = None, index=True, sep=' ')
+        F1_df.transpose().to_csv("./sk_data/RF/" + filename + "_SVM_F1_all.csv", header = None, index=True, sep=' ')
 
         AOD_df = pd.DataFrame(reformed_AODdict)
         AOD_df.columns = ['_'.join(map(str, x)) for x in AOD_df.columns]
-        AOD_df.transpose().to_csv("./sk_data/RF/" + filename + "_RF_AOD_all.csv", header = None, index=True, sep=' ')
+        AOD_df.transpose().to_csv("./sk_data/RF/" + filename + "_SVM_AOD_all.csv", header = None, index=True, sep=' ')
 
         EOD_df = pd.DataFrame(reformed_EODdict)
         EOD_df.columns = ['_'.join(map(str, x)) for x in EOD_df.columns]
-        EOD_df.transpose().to_csv("./sk_data/RF/" + filename + "_RF_EOD_all.csv", header = None, index=True, sep=' ')
+        EOD_df.transpose().to_csv("./sk_data/RF/" + filename + "_SVM_EOD_all.csv", header = None, index=True, sep=' ')
 
         SPD_df = pd.DataFrame(reformed_SPDdict)
         SPD_df.columns = ['_'.join(map(str, x)) for x in SPD_df.columns]
-        SPD_df.transpose().to_csv("./sk_data/RF/" + filename + "_RF_SPD_all.csv", header = None, index=True, sep=' ')
+        SPD_df.transpose().to_csv("./sk_data/RF/" + filename + "_SVM_SPD_all.csv", header = None, index=True, sep=' ')
 
         FA0_df = pd.DataFrame(reformed_FA0dict)
         FA0_df.columns = ['_'.join(map(str, x)) for x in FA0_df.columns]
-        FA0_df.transpose().to_csv("./sk_data/RF/" + filename + "_RF_FA0_all.csv", header = None, index=True, sep=' ')
+        FA0_df.transpose().to_csv("./sk_data/RF/" + filename + "_SVM_FA0_all.csv", header = None, index=True, sep=' ')
 
         FA1_df = pd.DataFrame(reformed_FA1dict)
         FA1_df.columns = ['_'.join(map(str, x)) for x in FA1_df.columns]
-        FA1_df.transpose().to_csv("./sk_data/RF/" + filename + "_RF_FA1_all.csv", header = None, index=True, sep=' ')
+        FA1_df.transpose().to_csv("./sk_data/RF/" + filename + "_SVM_FA1_all.csv", header = None, index=True, sep=' ')
 
 
 if __name__ == '__main__':
