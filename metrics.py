@@ -144,7 +144,7 @@ def main():
 
                 dfr = copy.deepcopy(dfs)
                 dfr.drop(dfs.loc[dfs['run_num']!= i].index, inplace=True)
-                y_true = dfr["!Probability"]
+                y_true = dfr["!Probability"] or dfr["!probability"]
                 y_pred = dfr["predicted"]
                 # print(dfr)
                 # rnum = dfs["run_num"]
