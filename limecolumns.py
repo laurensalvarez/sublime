@@ -110,7 +110,7 @@ def classify(table, df, samples):
         y.append(y_row)
         # print(len(X[0]))
 
-    for _ in range(3):
+    for _ in range(1):
         perturbed_xtrain = np.random.normal(0,1,size=np.shape(X))
         p_train_x = np.vstack((X, X + perturbed_xtrain))
         # p_train_y = np.concatenate((np.ones(X.shape[0]), np.zeros(X.shape[0])))
@@ -146,8 +146,8 @@ def classify(table, df, samples):
 
         X_train, X_test, y_train, y_test = train_test_split(all_x, all_y, test_size=0.20)
         #LR RF SVC
-        # clf = LogisticRegression(random_state=0)
-        clf = RandomForestClassifier(random_state=0)
+        clf = LogisticRegression(random_state=0)
+        # clf = RandomForestClassifier(random_state=0)
         # clf = SVC(kernel='linear')
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
@@ -264,11 +264,12 @@ def clusterandclassify(csv, limiter=None):
         final_columns.append(col.name)
     for col in table.klass:
         final_columns.append(col.name)
+    # final_columns.append("GT")
     final_columns.append("predicted")
     final_columns.append("samples")
     final_columns.append("run_num")
     final_df = df2[final_columns]
-    final_df.to_csv("./output/" + filename + "_lime_RF_test.csv", index=False)
+    final_df.to_csv("./output/" + filename + "_lime_LR.csv", index=False)
 
     # df.to_csv("./output/" + filename + "_median_20runs_LR_testing.csv", index=False)
 
@@ -276,13 +277,13 @@ import cProfile
 
 def main():
     random.seed(10019)
-    datasets = ["diabetes.csv"]#, "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
 
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
 
-        clusterandclassify(dataset, limiter=500)
+        clusterandclassify(dataset, limiter=1000)
 
 
     # clusterandclassify("diabetes.csv") #clusters

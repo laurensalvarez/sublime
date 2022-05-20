@@ -1,4 +1,3 @@
-
 from collections import defaultdict
 from copy import deepcopy
 from sklearn import preprocessing
@@ -14,8 +13,6 @@ import pandas as pd
 import numpy as np
 # from measure import measure_final_score,calculate_recall,calculate_precision,calculate_accuracy
 # from metrics import getMetrics
-
-
 # ------------------------------------------------------------------------------
 # Column Class
 # ------------------------------------------------------------------------------
@@ -41,7 +38,6 @@ class Col:
     def id(self):
         self._id += 1
         return self._id
-
 
 # ------------------------------------------------------------------------------
 # Symbolic Column Class
@@ -94,7 +90,6 @@ class Sym(Col):
         if (x == "?" or x == "") or (y == "?" or y == ""):  # check if the empty is just a bug
             return 1
         return 0 if x == y else 1
-
 
 # ------------------------------------------------------------------------------
 # Numeric Column Class
@@ -186,7 +181,6 @@ class Num(Col):
     def _numNorm(self, x):
         "normalize the column."  # Min-Max Normalization + a super tiny num so you never divide by 0
         return (x - self.lo) / (self.hi - self.lo + tiny)
-
 
 # ------------------------------------------------------------------------------
 # Table Class: Reads in CSV and Produces Table of Nums/Syms
@@ -392,7 +386,7 @@ class Table:
         if len(rowA) != len(rowB):  # catch if they can't be compared?? why??
             return -big
         # for i, (a,b) in enumerate(zip(rowA, rowB)):#to iterate through an interable: an get the index with enumerate(), and get the elements of multiple iterables with zip()
-        for col in self.cols:  # to include y self.cols ; for just x vals self.x
+        for col in self.x:  # to include y self.cols ; for just x vals self.x
             i = col.uid
             d = self.cols[i].dist(self.compiler(rowA[i]), self.compiler(
                 rowB[i]))  # distance of both rows in each of the columns; compile the a & b bc it's in a text format
@@ -455,7 +449,6 @@ class Table:
         root = TreeNode(left, right, leftTable, rightTable, table, leftNode, rightNode, False, table.header)
         return root
 
-
 # ------------------------------------------------------------------------------
 # Tree class
 # ------------------------------------------------------------------------------
@@ -474,11 +467,9 @@ class TreeNode:
         self.leftNode = leftNode
         self.rightNode = rightNode
 
-
 # ------------------------------------------------------------------------------
 # TreeNode Class Helper Fuctions: Functional Tree Traversal
 # ------------------------------------------------------------------------------
-
 def nodes(root):  # gets all the leaf nodes
     if root:
         for node in nodes(root.leftNode): yield node  # yield returns from a function without destroying it
@@ -506,7 +497,6 @@ def leafmedians(root, how=None):  # for all of the leaves from smallest to large
     MedianTable.encode_lines()
     return MedianTable
 
-
 def getLeafData(root, samples_per_leaf,
                 how=None):  # for all of the leaves from smallest to largest print len of rows & median
     EDT = Table(samples_per_leaf)
@@ -520,7 +510,6 @@ def getLeafData(root, samples_per_leaf,
             counter += 1
     EDT.encode_lines()
     return EDT
-
 
 def sortedleafclusterlabels(root, f,
                             how=None):  # for all of the leaves from smallest to largest print len of rows & median
@@ -612,6 +601,7 @@ def classify(table, df, samples):
     y = []
     all_data = {}
     y_index = table.y[-1].uid
+
     for row in table.encodedrows:
         X_row = []
         y_row = -1
@@ -622,22 +612,16 @@ def classify(table, df, samples):
                 X_row.append(val)
         X.append(X_row)
         y.append(y_row)
-
     # create svm
-
-
-
     # predict
     for i in range(1, 21):  # split data 80% train 20 % test * 10 times
-
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
         #LR RF SVC
         # clf = LogisticRegression(random_state=0)
-        # clf = RandomForestClassifier(random_state=0)
+        clf = RandomForestClassifier(random_state=0)
         # clf = SVC(kernel='linear')
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
-
 
         full = []
         for x in X_test:
@@ -650,7 +634,6 @@ def classify(table, df, samples):
         for row in full:
             a_series = pd.Series(row, index=df.columns)
             df = df.append(a_series, ignore_index=True)
-
     # print(cr)
 
     return df
@@ -740,9 +723,8 @@ def clusterandclassify(csv, limiter=None):
     final_columns.append("samples")
     final_columns.append("run_num")
     final_df = df2[final_columns]
-    final_df.to_csv("./output/" + filename + "_lime_RF_all.csv", index=False)
+    final_df.to_csv("./output/ex/" + filename + "_x_RF_all.csv", index=False)
 
-    # df.to_csv("./output/" + filename + "_median_20runs_LR_testing.csv", index=False)
 
 import cProfile
 

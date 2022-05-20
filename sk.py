@@ -352,15 +352,15 @@ from tqdm import tqdm
 
 if __name__ == "__main__":
   random.seed(1)
-  datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
-  metrics = ['recall', 'prec', 'acc', 'F1', 'AOD', 'EOD', 'SPD', 'FA0', 'FA1']
+  datasets = ["GermanCredit.csv", "diabetes.csv", "CleanCOMPAS53.csv",]
+  metrics = ['recall+', 'prec+', 'acc+', 'F1+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-']
   pbar = tqdm(datasets)
   for dataset in pbar:
       pbar.set_description("Processing %s" % dataset)
       filename = dataset[:-4]
       for m in metrics:
           print("\n" + filename +"-" + m + "\n"  )
-          Rx.fileIn("./sk_data/SVM/" + filename + "_SVM_" + m +"_all.csv")
+          Rx.fileIn("./sk_data/ex/" + filename + "_RF_" + m +"_x.csv")
 
 
 

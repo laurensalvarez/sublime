@@ -57,7 +57,7 @@ def makeBinary(preddf, dataset):
         preddf['Age('] = np.where((preddf['Age('] > 25), 0, 1)
 
     if dataset == "GermanCredit":
-        preddf['savings('] = np.where((preddf['savings('] == 0) | (preddf['savings('] == 1) | (preddf['savings('] ==  4), 0, 1)
+        preddf['sav('] = np.where((preddf['sav('] == 0) | (preddf['sav('] == 1) | (preddf['sav('] ==  4), 0, 1)
         # preddf['savings('] = np.where(preddf['savings('] == 2 or 3, 1, preddf['savings('])
 
         preddf['Age('] = np.where((preddf['Age('] > 25), 0, 1)
@@ -81,7 +81,7 @@ def getBiasCols(dataset):
         bias_cols = ["sex(", "Age(","race("]
 
     if dataset == "GermanCredit":
-        bias_cols = ["Credit_amount(","savings(", "sex(" , "Age(", "foreign_worker("]
+        bias_cols = ["C_a(","sav(", "sex(" , "Age(", "f_w("]
 
     if dataset == "diabetes":
         bias_cols = ["Age("]
@@ -107,7 +107,7 @@ def main():
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        predlines = Table.readfile(r'./output/' + filename + "_pp_SVM_all.csv")
+        predlines = Table.readfile(r'./output/ex/' + filename + "_x_RF_all.csv")
 
         predtable = Table(2)
         predtable + predlines[0]
@@ -160,9 +160,9 @@ def main():
                     # print(tmp)
                     rows.append(tmp)
 
-        fulldf = pd.DataFrame(rows, columns = ['recall', 'precision', 'accuracy', 'F1_Score', 'AOD', 'EOD', 'SPD', 'FA0', 'FA1', 'feature', 'sample_size', 'run_num'])
+        fulldf = pd.DataFrame(rows, columns = ['recall+', 'precision+', 'accuracy+', 'F1_Score+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-', 'feature', 'sample_size', 'run_num'])
 
-        fulldf.to_csv("./metrics/" + filename + "_SVM_cmetrics.csv", index=False)
+        fulldf.to_csv("./metrics/ex/" + filename + "_x_RF_metrics.csv", index=False)
 
 
 
