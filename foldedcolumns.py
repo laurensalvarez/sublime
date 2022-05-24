@@ -626,16 +626,36 @@ def classify(table, df, X_test, y_test, samples, f):
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
 
+        # print("y_pred.shape:", y_pred.shape)
+        # print("y_test.shape:", y_test.shape)
         full = []
-        for x in X_test:
+        y_pred_list = y_pred.tolist()
+        y_test_list = y_test.tolist()
+        for x in list(X_test.values):
             full.append(deepcopy(x))
-        for j in range(len(y_test)):
-            full[j].append(y_test[j])
-            full[j].append(y_pred[j])
-            full[j].append(samples)
-            full[j].append(f)
-            full[j].append(i)
+
+        for j in range(len(y_test_list)):
+            # print("to start:", full[j])
+            # full[j].append(y_test_list[j])
+            full[j] = np.append(full[j],y_test_list[j])
+            # full[j].append(y_pred_list[j])
+            # full[j].insert(y_pred[j], -1)
+            full[j] = np.append(full[j],y_pred_list[j])
+            # full[j].insert(y_pred[j], -1)
+            # full[j].append(samples)
+            full[j] = np.append(full[j], samples)
+            # full[j].insert(samples, -1)
+            # full[j].append(f)
+            full[j] = np.append(full[j], f)
+            # full[j].insert(f, -1)
+            # full[j].append(i)
+            full[j] = np.append(full[j], i)
+            # full[j].insert(i, -1)
+            # print("to end:", full[j]
+        # print(df.columns)
         for row in full:
+            # print(row)
+            # sys.exit()
             a_series = pd.Series(row, index=df.columns)
             df = df.append(a_series, ignore_index=True)
     return df
@@ -658,16 +678,16 @@ def getTable(csv, limiter = None):
         for l in lines[1:]:
             table + l
 
-    return table
+    return table, filename
 
-def clusterandclassify(table):
+def clusterandclassify(table, filename):
     # print("Whole Data Classification...")
     table.encode_lines()
     # print(list(table.y[-1].encoder.classes_))
     # X,y = getXY(table)
     y_index = table.y[-1].name
     tcolumns = deepcopy(table.header)
-    trows = deepcopy(table.rows)
+    trows = deepcopy(table.encodedrows)
     dsdf = pd.DataFrame(data= trows, columns=tcolumns)
 
     tcols = deepcopy(table.header)
@@ -675,24 +695,26 @@ def clusterandclassify(table):
     tcols.append("samples")
     tcols.append("fold")
     tcols.append("run_num")
-    df2 = pd.DataFrame(columns=tcols)
+    sampledf = pd.DataFrame(columns=tcols)
+    full_df = pd.DataFrame(columns=tcols)
 
     rkf = RepeatedKFold(n_splits=5, n_repeats=5, random_state=222)
+
     # traindf = pd.DataFrame()
     # testdf = pd.DataFrame()
     f = 1 #do we want to count the folds??/
     # print(dsdf.head)
     # print(y_index)
     for train_index, test_index in rkf.split(dsdf):
-        X_train = dsdf.iloc[train_index]
-        X_test = dsdf.iloc[test_index]
+        X_train = dsdf.iloc[train_index].drop(columns = [y_index])
+        X_test = dsdf.iloc[test_index].drop(columns = [y_index])
         y_train = dsdf.iloc[train_index][y_index]
         y_test = dsdf.iloc[test_index][y_index]
-        print("X_train", X_train.head)
-        print("X_test", X_test.head)
-        print("y_train", y_train.head)
-        print("y_test", y_test.head)
-        sys.exit()
+        # print("X_train", X_train.head)
+        # print("X_test", X_test.head)
+        # print("y_train", y_train.head)
+        # print("y_test", y_test.head)
+        # sys.exit()
 
         # df2 = classify(df2, X_train, X_test, y_train, y_test, len(table.rows), f)
         # print("Clustering ...")
@@ -707,40 +729,47 @@ def clusterandclassify(table):
         root = Table.clusters(table2.rows, table, enough)
 
         treatments = [1,2,3,5,enough]
-        pbar = tqdm(treatments)  # loading bar
-        for samples in pbar:
-            pbar.set_description("Extrapolated Data Classification with %s samples" % samples)
+        for samples in treatments:
+            # print("samples:", samples)
             if samples == 1:
                 MedianTable = leafmedians(root)
-                df2 = classify(MedianTable, df2, X_test, y_test, samples, f)
+                sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, f)
             else:
                 EDT = getLeafData(root, samples) #get x random point(s) from leaf clusters
-                df2 = classify(EDT, df2, X_test, y_test, samples, f)
+                sampledf = classify(EDT, sampledf, X_test, y_test, samples, f)
 
+            # print("sampledf:", sampledf.shape)
+            full_df = full_df.append(sampledf)
+        # print("full_df:", full_df.shape)
         f += 1
-    final_columns = []
-    for col in table.protected:
-        final_columns.append(col.name)
-    for col in table.klass:
-        final_columns.append(col.name)
-    final_columns.append("predicted")
-    final_columns.append("samples")
-    final_columns.append("run_num")
-    final_df = df2[final_columns]
-    final_df.to_csv("./output/fold/" + filename + "_folded_RF.csv", index=False)
+        print("f:", f)
+    # print("full_df head:", full_df.head)
+        # final_df2 = pd.concat([final_df2, final_df], ignore_index=False)
+    # final_columns = []
+    # for col in table.protected:
+    #     final_columns.append(col.name)
+    # for col in table.klass:
+    #     final_columns.append(col.name)
+    # final_columns.append("predicted")
+    # final_columns.append("samples")
+    # final_columns.append("fold")
+    # final_columns.append("run_num")
+    # final_df = full_df[final_columns]
+    # print("final_df:", final_df.shape)
+    full_df.to_csv("./output/fold/" + filename + "_folded_RF.csv", index=False)
 
 
 import cProfile
 
 def main():
     random.seed(10019)
-    datasets = ["diabetes.csv"] #, "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    datasets = ["CleanCOMPAS53.csv"]
     pbar = tqdm(datasets)
 
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
-        table = getTable(dataset, limiter=1000)
-        clusterandclassify(table)
+        table, filename = getTable(dataset, limiter=1000)
+        clusterandclassify(table, filename)
 
 
     # clusterandclassify("diabetes.csv") #clusters

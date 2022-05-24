@@ -101,22 +101,24 @@ def sampleMetrics(test_df, y_true, y_pred, biased_cols, samples, run_num):
 ###
 ###############################################
 def main():
-    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    datasets = ["diabetes.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        predlines = Table.readfile(r'./output/ex/' + filename + "_x_RF_all.csv")
+        filepath = r'./output/fold/' + filename + "_folded_RF.csv"
+        # print(filepath)
+        # predlines = Table.readfile(r'./output/fold/' + filename + "_folded_RF.csv")
 
-        predtable = Table(2)
-        predtable + predlines[0]
-        for l in predlines[1:]:
-            predtable + l
+        # predtable = Table(2)
+        # predtable + predlines[0]
+        # for l in predlines[1:]:
+        #     predtable + l
+        #
+        # predColNames = getColNames(predtable)
 
-        predColNames = getColNames(predtable)
-
-        preddf = pd.DataFrame(predtable.rows, columns=predColNames)
+        preddf = pd.read_csv(filepath)
 
         bintdf = makeBinary(preddf, filename)
         # print(bintdf)
@@ -144,7 +146,10 @@ def main():
 
                 dfr = copy.deepcopy(dfs)
                 dfr.drop(dfs.loc[dfs['run_num']!= i].index, inplace=True)
-                y_true = dfr["!Probability"] or dfr["!probability"]
+                if '!probability' in dfr.columns:
+                    y_true = dfr["!probability"]
+                else:
+                    y_true = dfr["!Probability"]
                 y_pred = dfr["predicted"]
                 # print(dfr)
                 # rnum = dfs["run_num"]
@@ -162,7 +167,7 @@ def main():
 
         fulldf = pd.DataFrame(rows, columns = ['recall+', 'precision+', 'accuracy+', 'F1_Score+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-', 'feature', 'sample_size', 'run_num'])
 
-        fulldf.to_csv("./metrics/ex/" + filename + "_x_RF_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/fold/" + filename + "_folded_RF_metrics.csv", index=False)
 
 
 
