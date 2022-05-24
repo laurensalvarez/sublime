@@ -620,8 +620,8 @@ def classify(table, df, X_test, y_test, samples, f):
     for i in range(1, 21):  # split data 80% train 20 % test * 10 times
         # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
         #LR RF SVC
-        # clf = LogisticRegression(random_state=0)
-        clf = RandomForestClassifier(random_state=0)
+        clf = LogisticRegression(random_state=0)
+        # clf = RandomForestClassifier(random_state=0)
         # clf = SVC(kernel='linear')
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
@@ -756,14 +756,14 @@ def clusterandclassify(table, filename):
     # final_columns.append("run_num")
     # final_df = full_df[final_columns]
     # print("final_df:", final_df.shape)
-    full_df.to_csv("./output/fold/" + filename + "_folded_RF.csv", index=False)
+    full_df.to_csv("./output/fold/" + filename + "_folded_LR.csv", index=False)
 
 
 import cProfile
 
 def main():
     random.seed(10019)
-    datasets = ["CleanCOMPAS53.csv"]
+    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
 
     for dataset in pbar:
