@@ -136,50 +136,28 @@ def classify(table, df, samples):
     #--> use for classifier; check to see if it's right
     all_y = np.array(p + iid).tolist()
 
-    # print(all_y)
-    # print("------------------------------------------------")
-    # print(all_x)
-    #
-    # sys.exit()
-    # predict
-    for i in range(1, 21):  # split data 80% train 20 % test * 10 times
 
-        X_train, X_test, y_train, y_test = train_test_split(all_x, all_y, test_size=0.20)
-        #LR RF SVC
-        clf = LogisticRegression(random_state=0)
-        # clf = RandomForestClassifier(random_state=0)
-        # clf = SVC(kernel='linear')
-        clf.fit(X_train, y_train)
-        y_pred = clf.predict(X_test)
-
-        # print("y_pred.shape:", y_pred.shape)
-        # print("y_test.shape:", y_test.shape)
+    X_train, X_test, y_train, y_test = train_test_split(all_x, all_y, test_size=0.20)
+    #LR RF SVC
+    clf = LogisticRegression(random_state=0)
+    # clf = RandomForestClassifier(random_state=0)
+    # clf = SVC(kernel='linear')
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
 
 
-        full = []
-        for x in X_test:
-            full.append(deepcopy(x))
-        for j in range(len(y_test)):
-            full[j].append(y_test[j])
-            full[j].append(y_pred[j])
-            full[j].append(samples)
-            full[j].append(i)
-            # np.concatenate(full[j], np.array(y_test[j]))
-            # np.append(full[j],y_test[j])
-            # # full[j].insert(y_test[j], -1)
-            # # np.concatenate(full[j], y_pred[j])
-            # np.append(full[j],y_pred[j])
-            # # full[j].insert(y_pred[j], -1)
-            # # np.concatenate(full[j], samples)
-            # np.append(full[j], samples)
-            # # full[j].insert(samples, -1)
-            # # np.concatenate(full[j], i)
-            # np.append(full[j], i)
-            # full[j].insert(i, -1)
-        # print(full[0])
-        for row in full:
-            a_series = pd.Series(row, index=df.columns)
-            df = df.append(a_series, ignore_index=True)
+
+    full = []
+    for x in X_test:
+        full.append(deepcopy(x))
+    for j in range(len(y_test)):
+        full[j].append(y_test[j])
+        full[j].append(y_pred[j])
+        full[j].append(samples)
+        full[j].append(i)
+    for row in full:
+        a_series = pd.Series(row, index=df.columns)
+        df = df.append(a_series, ignore_index=True)
 
     return df
 
@@ -235,7 +213,7 @@ def clusterandclassify(csv, limiter=None):
     # print("Sorting leaves ...")
     # print("Extrapolated Data Classification... until", (enough//2), "samples")
     # leafmedians(root) #bfs for the leaves gives median row
-    treatments = [1,2,3,5]
+    treatments = [1,2,3,5, enough]
     # pbar = tqdm(list(range(1, (int(enough * 0.55)))))  # loading bar
     # list12 = [1]
     pbar = tqdm(treatments)  # loading bar
