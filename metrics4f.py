@@ -107,7 +107,7 @@ def main():
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        filepath = r'./output/fold/' + filename + "_folded_RF.csv"
+        filepath = r'./output/foldedlime/' + filename + "_foldedlime_RF.csv"
         # print(filepath)
         # predlines = Table.readfile(r'./output/fold/' + filename + "_folded_RF.csv")
 
@@ -168,7 +168,7 @@ def main():
 
         fulldf = pd.DataFrame(rows, columns = ['recall+', 'precision+', 'accuracy+', 'F1_Score+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-', 'feature', 'sample_size', 'fold', 'run_num'])
 
-        fulldf.to_csv("./metrics/fold/" + filename + "_folded_RF_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/foldedlime/" + filename + "_foldedlime_RF_metrics.csv", index=False)
 
 
 

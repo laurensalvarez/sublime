@@ -101,7 +101,7 @@ def sampleMetrics(test_df, y_true, y_pred, biased_cols, samples, run_num):
 ###
 ###############################################
 def main():
-    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    datasets = ["diabetes.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
