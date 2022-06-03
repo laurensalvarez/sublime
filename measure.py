@@ -31,7 +31,7 @@ def get_counts(test_df, y_pred, y_true, biased_col, metric):
 
         test_df_copy['FP_' + biased_col + "_0"] = np.where((test_df_copy['!probability'] == 0) & (test_df_copy['predicted'] == 1) & (test_df_copy[biased_col] == 0), 1, 0)
 
-    else:
+    elif '!Probability' in test_df_copy.columns:
 
         test_df_copy['TP_' + biased_col + "_1"] = np.where((test_df_copy['!Probability']  == 1) & (test_df_copy['predicted'] == 1) & (test_df_copy[biased_col] == 1), 1, 0)
 
@@ -48,6 +48,23 @@ def get_counts(test_df, y_pred, y_true, biased_col, metric):
         test_df_copy['FN_' + biased_col + "_0"] = np.where((test_df_copy['!Probability'] == 1) & (test_df_copy['predicted'] == 0) & (test_df_copy[biased_col] == 0), 1, 0)
 
         test_df_copy['FP_' + biased_col + "_0"] = np.where((test_df_copy['!Probability'] == 0) & (test_df_copy['predicted'] == 1) & (test_df_copy[biased_col] == 0), 1, 0)
+
+    else:
+        test_df_copy['TP_' + biased_col + "_1"] = np.where((test_df_copy['yvals']  == 1) & (test_df_copy['predicted'] == 1) & (test_df_copy[biased_col] == 1), 1, 0)
+
+        test_df_copy['TN_' + biased_col + "_1"] = np.where((test_df_copy['yvals'] == 0) & (test_df_copy['predicted'] == 0) & (test_df_copy[biased_col] == 1), 1, 0)
+
+        test_df_copy['FN_' + biased_col + "_1"] = np.where((test_df_copy['yvals'] == 1) & (test_df_copy['predicted'] == 0) & (test_df_copy[biased_col] == 1), 1, 0)
+
+        test_df_copy['FP_' + biased_col + "_1"] = np.where((test_df_copy['yvals'] == 0) & (test_df_copy['predicted'] == 1) & (test_df_copy[biased_col] == 1), 1, 0)
+
+        test_df_copy['TP_' + biased_col + "_0"] = np.where((test_df_copy['yvals'] == 1) & (test_df_copy['predicted'] == 1) & (test_df_copy[biased_col] == 0), 1, 0)
+
+        test_df_copy['TN_' + biased_col + "_0"] = np.where((test_df_copy['yvals'] == 0) & (test_df_copy['predicted'] == 0) & (test_df_copy[biased_col] == 0), 1, 0)
+
+        test_df_copy['FN_' + biased_col + "_0"] = np.where((test_df_copy['yvals'] == 1) & (test_df_copy['predicted'] == 0) & (test_df_copy[biased_col] == 0), 1, 0)
+
+        test_df_copy['FP_' + biased_col + "_0"] = np.where((test_df_copy['yvals'] == 0) & (test_df_copy['predicted'] == 1) & (test_df_copy[biased_col] == 0), 1, 0)
 
     e = test_df_copy['TP_' + biased_col + "_1"].sum()
     f = test_df_copy['TN_' + biased_col + "_1"].sum()
