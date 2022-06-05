@@ -691,7 +691,7 @@ def clusterandclassify(table, filename):
     # print(pertubeddf.head)
     # sys.exit()
 
-    rkf = StratifiedShuffleSplit(n_splits=5,test_size=0.2, random_state=222)
+    rkf = RepeatedKFold(n_splits=5, n_repeats=5, random_state=222)
 
     # traindf = pd.DataFrame()
     # testdf = pd.DataFrame()
@@ -726,7 +726,7 @@ def clusterandclassify(table, filename):
     dsdf = shuffle(dsdf)
     # print(dsdf)
     y = dsdf['yvals'].tolist()
-    print(y)
+    # print(y)
     for train_index, test_index in rkf.split(dsdf,y):
         X_train = dsdf.iloc[train_index].drop(columns = ['yvals'])
         X_test = dsdf.iloc[test_index].drop(columns = ['yvals'])
@@ -747,7 +747,7 @@ def clusterandclassify(table, filename):
 
         treatments = [1,2,3,5,enough]
         for samples in treatments:
-            print("samples:", samples)
+            # print("samples:", samples)
             if samples == 1:
                 MedianTable = leafmedians(root)
                 sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, f)
@@ -773,14 +773,14 @@ def clusterandclassify(table, filename):
     final_columns.append("run_num")
     final_df = full_df[final_columns]
     # print("final_df:", final_df.shape)
-    final_df.to_csv("./output/pfolded/" + filename + "_pfolded_LR.csv", index=False)
+    final_df.to_csv("./output/pfolded/" + filename + "_folded_LR.csv", index=False)
 
 
 import cProfile
 
 def main():
     random.seed(10019)
-    datasets = ["GermanCredit.csv"]
+    datasets = ["GermanCredit.csv"] #"diabetes.csv", , "CleanCOMPAS53.csv"
     pbar = tqdm(datasets)
 
     for dataset in pbar:

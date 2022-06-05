@@ -621,8 +621,8 @@ def classify(table, df, X_test, y_test, samples, f):
 
     #LR RF SVC
     # clf = LogisticRegression(random_state=0)
-    clf = RandomForestClassifier(random_state=0)
-    # clf = SVC(kernel='linear')
+    # clf = RandomForestClassifier(random_state=0)
+    clf = SVC(kernel='linear')
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
 
@@ -752,7 +752,7 @@ def clusterandclassify(table, filename):
             # print("sampledf:", sampledf.shape)
             full_df = full_df.append(sampledf)
         # print("full_df:", full_df.shape)
-        # print("f:", f)
+        print("f:", f)
         f += 1
 
     # print("full_df head:", full_df.head)
@@ -767,7 +767,7 @@ def clusterandclassify(table, filename):
     final_columns.append("run_num")
     final_df = full_df[final_columns]
     # print("final_df:", final_df.shape)
-    final_df.to_csv("./output/pfolded/" + filename + "_pfolded_RF.csv", index=False)
+    final_df.to_csv("./output/pfolded/" + filename + "_pfolded2_SVM.csv", index=False)
 
 
 import cProfile
