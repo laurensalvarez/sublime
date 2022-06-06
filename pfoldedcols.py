@@ -587,13 +587,14 @@ def isValid(self, row):
 # Classifier
 # ------------------------------------------------------------------------------
 # Standard scientific Python imports
-from sklearn.model_selection import train_test_split, KFold, cross_val_score, RepeatedKFold
+from sklearn.model_selection import train_test_split, KFold, cross_val_score, RepeatedKFold, RepeatedStratifiedKFold, StratifiedShuffleSplit
 from sklearn.svm import SVC
 from sklearn import preprocessing
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.utils import shuffle
 
 
 def getXY(table):
@@ -719,6 +720,7 @@ def clusterandclassify(table, filename):
     tcols.append("run_num")
     sampledf = pd.DataFrame(columns=tcols)
     full_df = pd.DataFrame(columns=tcols)
+    dsdf = shuffle(dsdf)
 
     f = 1
     for train_index, test_index in rkf.split(dsdf):
@@ -773,8 +775,8 @@ def clusterandclassify(table, filename):
 import cProfile
 
 def main():
-    random.seed(10019)
-    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    random.seed(10039)
+    datasets = ["GermanCredit.csv"]
     pbar = tqdm(datasets)
 
     for dataset in pbar:

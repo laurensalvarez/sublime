@@ -352,7 +352,7 @@ from tqdm import tqdm
 
 if __name__ == "__main__":
   random.seed(1)
-  datasets = ["diabetes.csv", "CleanCOMPAS53.csv","GermanCredit.csv"]
+  datasets = ["diabetes.csv", "CleanCOMPAS53.csv"]
   metrics = ['recall+', 'prec+', 'acc+', 'F1+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-']
   pbar = tqdm(datasets)
   for dataset in pbar:
@@ -360,7 +360,7 @@ if __name__ == "__main__":
       filename = dataset[:-4]
       for m in metrics:
           print("\n" + filename +"-" + m + "\n"  )
-          Rx.fileIn("./sk_data/pfolded/" + filename + "_pfolded_RF_" + m +"_.csv")
+          Rx.fileIn("./sk_data/pfolded2/" + filename + "_pfolded2_SVM_" + m +"_.csv")
 
 
 

@@ -101,13 +101,13 @@ def sampleMetrics(test_df, y_true, y_pred, biased_cols, samples, f, run_num):
 ###
 ###############################################
 def main():
-    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    datasets = ["diabetes.csv", "CleanCOMPAS53.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        filepath = r'./output/pfolded/' + filename + "_pfolded_RF.csv"
+        filepath = r'./output/pfolded/' + filename + "_pfolded2_SVM.csv"
         # print(filepath)
         # predlines = Table.readfile(r'./output/fold/' + filename + "_folded_RF.csv")
 
@@ -167,7 +167,7 @@ def main():
 
         fulldf = pd.DataFrame(rows, columns = ['recall+', 'precision+', 'accuracy+', 'F1_Score+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-', 'feature', 'sample_size', 'fold', 'run_num'])
 
-        fulldf.to_csv("./metrics/pfolded/" + filename + "_pfolded_RF_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/pfolded/" + filename + "_pfolded2_SVM_metrics.csv", index=False)
 
 
 
