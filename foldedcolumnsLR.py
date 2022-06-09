@@ -662,7 +662,7 @@ def clusterandclassify(table, filename):
         enough = int(math.sqrt(len(table2.rows)))
         root = Table.clusters(table2.rows, table, enough)
 
-        treatments = [1,2,3,5,enough]
+        treatments = [1,14,enough]
         for samples in treatments:
             if samples == 1:
                 MedianTable = leafmedians(root)
@@ -686,7 +686,7 @@ def clusterandclassify(table, filename):
     final_columns.append("fold")
     final_columns.append("run_num")
     output_df = full_df[final_columns]
-    output_df.to_csv("./output/newDS/" + filename + "_sRF.csv", index=False)
+    output_df.to_csv("./output/6/" + filename + "_14RF.csv", index=False)
 
 
 def main():

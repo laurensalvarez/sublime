@@ -360,7 +360,7 @@ if __name__ == "__main__":
       filename = dataset[:-4]
       for m in metrics:
           print("\n" + filename +"-" + m + "\n"  )
-          Rx.fileIn("./sk_data/newDS/" + filename + "_sLR_" + m +"_.csv")
+          Rx.fileIn("./sk_data/6/" + filename + "_mpRF_" + m +"_.csv")
 
 
 
