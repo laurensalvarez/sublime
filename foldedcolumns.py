@@ -11,7 +11,7 @@ from tqdm import tqdm
 from sklearn import preprocessing
 from sklearn.svm import SVC
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.model_selection import train_test_split, KFold, cross_val_score, RepeatedKFold
+from sklearn.model_selection import train_test_split, KFold, cross_val_score, RepeatedKFold, RepeatedStratifiedKFold
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -512,45 +512,6 @@ def getLeafData(root, samples_per_leaf,
     EDT.encode_lines()
     return EDT
 
-def sortedleafclusterlabels(root, f,
-                            how=None):  # for all of the leaves from smallest to largest print len of rows & median
-    clabel = None
-    xlabel = None
-    match = 0
-    counter = 0
-
-    for leaf in sorted(nodes(root), key=how or rowSize):
-        counter += 1
-        t = leaf.leftTable
-
-        clabel = t.y[0].mid()
-
-        for row in t.rows:
-            if row not in t.skip:
-                xlabel = str(row[len(row) - 1])
-                if xlabel == clabel:  # this will crash if the xlabel is a string and the clabel is an int (i.e GermanCredit)
-                    match += 1
-
-        t.clabels = [clabel for i in range(len(t.rows))]
-        matches = match / (len(t.rows))
-
-        f.write("Leaf " + str(counter) + "\n")
-        if matches >= 0.80:
-            f.write("--------------------------------> Good Cluster Label <--------" + "\n")
-        else:
-            f.write("Bad Cluster Label" + "\n")
-
-        percent = "{0:.0%}".format(matches, 2)
-        f.write("Cluster Label: " + str(clabel) + "\n")
-        f.write("Label Matches: " + str(match) + "/" + str(len(t.rows)) + "\n")
-        f.write("Label Matches Percentage: " + str(percent) + "\n")
-        f.write(
-            "---------------------------------------------------------------------------------------------------------------------------------------" + "\n")
-        f.write(
-            "---------------------------------------------------------------------------------------------------------------------------------------" + "\n")
-
-        match = 0
-
     def dump(self, f):
         # DFS
         if self.leaf:
@@ -664,7 +625,7 @@ def clusterandclassify(table, filename):
     sampledf = pd.DataFrame(columns=tcols)
     full_df = pd.DataFrame(columns=tcols)
 
-    rkf = RepeatedKFold(n_splits=5, n_repeats=5, random_state=222)
+    rkf = KFold(n_splits=5, n_repeats=5, random_state=222)
 
     f = 1 #do we want to count the folds??
     for train_index, test_index in rkf.split(dsdf):
@@ -692,8 +653,9 @@ def clusterandclassify(table, filename):
                 EDT = getLeafData(root, samples) #get x random point(s) from leaf clusters
                 sampledf = classify(EDT, sampledf, X_test, y_test, samples, f)
             full_df = full_df.append(sampledf)
-        f += 1
         print("f:", f)
+        f += 1
+
     # print("full_df head:", full_df.head)
         # final_df2 = pd.concat([final_df2, final_df], ignore_index=False)
     final_columns = []
@@ -710,8 +672,8 @@ def clusterandclassify(table, filename):
 
 
 def main():
-    random.seed(10019)
-    datasets = ["adultscensusincome.csv", "defaultcredit.csv", "bankmarketing.csv"]
+    random.seed(10039)
+    datasets = ["defaultcredit.csv", "bankmarketing.csv"]
     pbar = tqdm(datasets)
 
     for dataset in pbar:
