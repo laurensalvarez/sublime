@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix,classification_report
 from measure import measure_final_score,calculate_recall,calculate_precision,calculate_accuracy
-from columns import Table, Col, Sym, Num
+from foldedcolumns import Table, Col, Sym, Num
 
 
 
@@ -67,6 +67,24 @@ def makeBinary(preddf, dataset):
         preddf['sex('] = np.where((preddf['sex('] == 1), 0, 1)
         # preddf['sex('] = np.where(preddf['sex('] == 0 or 2 or 3, 1, preddf['sex('])
 
+    if dataset == "adultscensusincome":
+        # preddf['Age('] = np.where((preddf['Age('] > 25), 0, 1)
+        preddf['sex('] = np.where((preddf['sex('] == 1), 0, 1)
+        preddf['race('] = np.where((preddf['race('] == 5), 1, 0)
+
+    if dataset == "bankmarketing":
+        preddf['Age('] = np.where((preddf['Age('] > 25), 0, 1)
+        preddf['marital('] = np.where((preddf['marital('] == 3), 1, 0)
+        preddf['education('] = np.where((preddf['education('] == 6) | (preddf['education('] == 7), 1, 0)
+
+
+    if dataset == "defaultcredit":
+        preddf['SEX('] = np.where((preddf['SEX('] == 1), 1, 0)
+        preddf['MARRIAGE('] = np.where((preddf['MARRIAGE('] == 1), 1, 0)
+        preddf['EDUCATION('] = np.where((preddf['EDUCATION('] == 1) | (preddf['EDUCATION('] == 2), 1, 0)
+        preddf['AGE('] = np.where((preddf['AGE('] > 25), 0, 1)
+        preddf['LIMIT_BAL('] = np.where((preddf['LIMIT_BAL('] > 25250), 1, 0)
+
     return preddf
 
 def getColNames(table):
@@ -86,6 +104,16 @@ def getBiasCols(dataset):
     if dataset == "diabetes":
         bias_cols = ["Age("]
 
+    if dataset == "adultscensusincome":
+        bias_cols = ["sex(", "race("]
+
+    if dataset == "bankmarketing":
+        bias_cols = ["Age(", "marital(", "education("]
+
+    if dataset == "defaultcredit":
+        bias_cols = ["LIMIT_BAL(", "SEX(","EDUCATION(","MARRIAGE(","AGE("]
+
+
     return bias_cols
 
 
@@ -101,13 +129,13 @@ def sampleMetrics(test_df, y_true, y_pred, biased_cols, samples, f, run_num):
 ###
 ###############################################
 def main():
-    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    datasets = ["adultscensusincome.csv", "bankmarketing.csv", "defaultcredit.csv", "diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        filepath = r'./output/foldedlime/' + filename + "_foldedlime_RF.csv"
+        filepath = r'./output/newDS/' + filename + "_sLR.csv"
         # print(filepath)
         # predlines = Table.readfile(r'./output/fold/' + filename + "_folded_RF.csv")
 
@@ -168,7 +196,7 @@ def main():
 
         fulldf = pd.DataFrame(rows, columns = ['recall+', 'precision+', 'accuracy+', 'F1_Score+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-', 'feature', 'sample_size', 'fold', 'run_num'])
 
-        fulldf.to_csv("./metrics/foldedlime/" + filename + "_foldedlime_RF_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/newDS/" + filename + "_sLR_metrics.csv", index=False)
 
 
 

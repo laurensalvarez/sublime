@@ -7,12 +7,12 @@ from measure import measure_final_score,calculate_recall,calculate_precision,cal
 
 
 def main():
-    datasets = ["diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    datasets = ["adultscensusincome.csv", "bankmarketing.csv", "defaultcredit.csv", "diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
     for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
         filename = dataset[:-4]
-        df = pd.read_csv(r'./metrics/fold/' + filename + "_folded_RF_metrics.csv")
+        df = pd.read_csv(r'./metrics/newDS/' + filename + "_sLR_metrics.csv")
 
         df1 = copy.deepcopy(df)
 
@@ -29,13 +29,21 @@ def main():
         FA0dict = defaultdict(dict)
         FA1dict = defaultdict(dict)
 
-        feat = str()
+        feat = []
         if filename == "CleanCOMPAS53":
-            feat = "race("
+            feat.append("race(")
+            feat.append("sex(")
+        elif filename == "adultscensusincome":
+            feat.append("race(")
+            feat.append("sex(")
         elif filename == "GermanCredit":
-            feat = "sex("
-        else:
-            feat = "Age("
+            feat.append("sex(")
+        elif filename == "defaultcredit":
+            feat.append("SEX(")
+        elif filename == "diabetes":
+            feat.append("Age(")
+        elif filename == "bankmarketing":
+            feat.append("Age(")
 
         for s in sortedsamples:
             # print("Grouping DF-RF by", s, "samples: \n")
@@ -46,7 +54,7 @@ def main():
             sortedfeatures = sorted(set(features), key = lambda ele: features.count(ele))
 
             for f in sortedfeatures:
-                if f == feat:
+                if f in feat:
                     dfRF3 = copy.deepcopy(dfRF2)
                     dfRF3.drop(dfRF3.loc[dfRF3['feature']!= f].index, inplace=True)
 
@@ -120,39 +128,39 @@ def main():
 
         recall_df = pd.DataFrame(reformed_recalldict)
         recall_df.columns = ['_'.join(map(str, x)) for x in recall_df.columns]
-        recall_df.transpose().to_csv("./sk_data/fold1F/" + filename + "_fold1F_RF_recall+_.csv", header = None, index=True, sep=' ')
+        recall_df.transpose().to_csv("./sk_data/newDS/" + filename + "_sLR_recall+_.csv", header = None, index=True, sep=' ')
 
         prec_df = pd.DataFrame(reformed_predict)
         prec_df.columns = ['_'.join(map(str, x)) for x in prec_df.columns]
-        prec_df.transpose().to_csv("./sk_data/fold1F/" + filename + "_fold1F_RF_prec+_.csv", header = None, index=True, sep=' ')
+        prec_df.transpose().to_csv("./sk_data/newDS/" + filename + "_sLR_prec+_.csv", header = None, index=True, sep=' ')
 
         acc_df = pd.DataFrame(reformed_accdict)
         acc_df.columns = ['_'.join(map(str, x)) for x in acc_df.columns]
-        acc_df.transpose().to_csv("./sk_data/fold1F/" + filename + "_fold1F_RF_acc+_.csv", header = None, index=True, sep=' ')
+        acc_df.transpose().to_csv("./sk_data/newDS/" + filename + "_sLR_acc+_.csv", header = None, index=True, sep=' ')
 
         F1_df = pd.DataFrame(reformed_F1dict)
         F1_df.columns = ['_'.join(map(str, x)) for x in F1_df.columns]
-        F1_df.transpose().to_csv("./sk_data/fold1F/" + filename + "_fold1F_RF_F1+_.csv", header = None, index=True, sep=' ')
+        F1_df.transpose().to_csv("./sk_data/newDS/" + filename + "_sLR_F1+_.csv", header = None, index=True, sep=' ')
 
         AOD_df = pd.DataFrame(reformed_AODdict)
         AOD_df.columns = ['_'.join(map(str, x)) for x in AOD_df.columns]
-        AOD_df.transpose().to_csv("./sk_data/fold1F/" + filename + "_fold1F_RF_AOD-_.csv", header = None, index=True, sep=' ')
+        AOD_df.transpose().to_csv("./sk_data/newDS/" + filename + "_sLR_AOD-_.csv", header = None, index=True, sep=' ')
 
         EOD_df = pd.DataFrame(reformed_EODdict)
         EOD_df.columns = ['_'.join(map(str, x)) for x in EOD_df.columns]
-        EOD_df.transpose().to_csv("./sk_data/fold1F/" + filename + "_fold1F_RF_EOD-_.csv", header = None, index=True, sep=' ')
+        EOD_df.transpose().to_csv("./sk_data/newDS/" + filename + "_sLR_EOD-_.csv", header = None, index=True, sep=' ')
 
         SPD_df = pd.DataFrame(reformed_SPDdict)
         SPD_df.columns = ['_'.join(map(str, x)) for x in SPD_df.columns]
-        SPD_df.transpose().to_csv("./sk_data/fold1F/" + filename + "_fold1F_RF_SPD-_.csv", header = None, index=True, sep=' ')
+        SPD_df.transpose().to_csv("./sk_data/newDS/" + filename + "_sLR_SPD-_.csv", header = None, index=True, sep=' ')
 
         FA0_df = pd.DataFrame(reformed_FA0dict)
         FA0_df.columns = ['_'.join(map(str, x)) for x in FA0_df.columns]
-        FA0_df.transpose().to_csv("./sk_data/fold1F/" + filename + "_fold1F_RF_FA0-_.csv", header = None, index=True, sep=' ')
+        FA0_df.transpose().to_csv("./sk_data/newDS/" + filename + "_sLR_FA0-_.csv", header = None, index=True, sep=' ')
 
         FA1_df = pd.DataFrame(reformed_FA1dict)
         FA1_df.columns = ['_'.join(map(str, x)) for x in FA1_df.columns]
-        FA1_df.transpose().to_csv("./sk_data/fold1F/" + filename + "_fold1F_RF_FA1-_.csv", header = None, index=True, sep=' ')
+        FA1_df.transpose().to_csv("./sk_data/newDS/" + filename + "_sLR_FA1-_.csv", header = None, index=True, sep=' ')
 
 
 if __name__ == '__main__':
