@@ -516,6 +516,25 @@ def getLeafData(root, samples_per_leaf,
     EDT.encode_lines()
     return EDT
 
+def getLeafMedClass(root, samples_per_leaf,
+                how=None):  # for all of the leaves from smallest to largest get x samples per leaf with median class label
+    EDT = Table(samples_per_leaf)
+    EDT.create_cols(root.header)
+    counter = 0
+    for leaf in sorted(nodes(root), key=how or rowSize):
+        t = leaf.leftTable
+        mid = col.mid() for col in t.y
+        for i in range(samples_per_leaf):
+            randomrow = random.choice(t.rows)
+            EDT + randomrow
+            counter += 1
+
+    numrows = len(EDT.rows)
+    newy = [mid for r in numrows]
+    EDT.y = newy
+    EDT.encode_lines()
+    return EDT
+
     def dump(self, f):
         # DFS
         if self.leaf:
@@ -668,7 +687,7 @@ def clusterandclassify(table, filename):
                 MedianTable = leafmedians(root)
                 sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, f)
             else:
-                EDT = getLeafData(root, samples) #get x random point(s) from leaf clusters
+                EDT = getLeafMedClass(root, samples) #get x random point(s) from leaf clusters with median class label
                 sampledf = classify(EDT, sampledf, X_test, y_test, samples, f)
             full_df = full_df.append(sampledf)
         print("f:", f)

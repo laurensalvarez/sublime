@@ -16,6 +16,9 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
+import warnings
+warnings.filterwarnings("ignore")
+
 big = sys.maxsize
 tiny = 1 / big
 
@@ -489,7 +492,8 @@ def rowSize(t): return len(t.leftTable.rows)  # gets the size of the rows
 
 def leafmedians(root, how=None):  # for all of the leaves from smallest to largest print len of rows & median
     MedianTable = Table(222)
-    MedianTable.create_cols(root.header)
+    header = root.header
+    MedianTable + header
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
         mid = [col.mid() for col in t.cols]
@@ -498,10 +502,10 @@ def leafmedians(root, how=None):  # for all of the leaves from smallest to large
     MedianTable.encode_lines()
     return MedianTable
 
-def getLeafData(root, samples_per_leaf,
-                how=None):  # for all of the leaves from smallest to largest print len of rows & median
+def getLeafData(root, samples_per_leaf,how=None):  # for all of the leaves from smallest to largest print len of rows & median
     EDT = Table(samples_per_leaf)
-    EDT.create_cols(root.header)
+    header = root.header
+    EDT + header
     counter = 0
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
@@ -569,8 +573,8 @@ def classify(table, df, X_test, y_test, samples, f):
     X_train, y_train = getXY(table)
 
     #LR RF SVC
-    clf = LogisticRegression(random_state=0)
-    # clf = RandomForestClassifier(random_state=0)
+    # clf = LogisticRegression(random_state=0)
+    clf = RandomForestClassifier(random_state=0)
     # clf = SVC(kernel='linear')
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
@@ -590,6 +594,32 @@ def classify(table, df, X_test, y_test, samples, f):
         df = df.append(a_series, ignore_index=True)
     return df
 
+def fullclassify(df, X_train, y_train, X_test, y_test, samples, f):
+    i = 1
+    full = []
+    # X_train, y_train = getXY(table)
+
+    #LR RF SVC
+    # clf = LogisticRegression(random_state=0)
+    clf = RandomForestClassifier(random_state=0)
+    # clf = SVC(kernel='linear')
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+
+    y_pred_list = y_pred.tolist()
+    y_test_list = y_test.tolist()
+    for x in list(X_test.values):
+        full.append(deepcopy(x))
+    for j in range(len(y_test_list)):
+        full[j] = np.append(full[j],y_test_list[j])
+        full[j] = np.append(full[j],y_pred_list[j])
+        full[j] = np.append(full[j], samples)
+        full[j] = np.append(full[j], f)
+        full[j] = np.append(full[j], i)
+    for row in full:
+        a_series = pd.Series(row, index=df.columns)
+        df = df.append(a_series, ignore_index=True)
+    return df
 
 # ------------------------------------------------------------------------------
 # Main
@@ -601,6 +631,10 @@ def getTable(csv, limiter = None):
     lines = Table.readfile(r'./datasets/' + dataset)
     table = Table(1)
     table + lines[0]
+
+    lines.pop(0)
+    random.shuffle(lines)
+
     if limiter != None:
         for l in lines[1:limiter]:
             table + l
@@ -624,15 +658,22 @@ def clusterandclassify(table, filename):
     tcols.append("run_num")
     sampledf = pd.DataFrame(columns=tcols)
     full_df = pd.DataFrame(columns=tcols)
+    onedf = pd.DataFrame(columns=tcols)
 
-    rkf = KFold(n_splits=5, n_repeats=5, random_state=222)
+    rkf = RepeatedKFold(n_splits=5, n_repeats=5, random_state=222)
 
     f = 1 #do we want to count the folds??
     for train_index, test_index in rkf.split(dsdf):
-        X_train = dsdf.iloc[train_index].drop(columns = [y_index])
+        X_train = dsdf.iloc[train_index]
         X_test = dsdf.iloc[test_index].drop(columns = [y_index])
-        y_train = dsdf.iloc[train_index][y_index]
         y_test = dsdf.iloc[test_index][y_index]
+
+        X_train_for_all_pts = dsdf.iloc[train_index].drop(columns = [y_index])
+        y_train_for_all_pts = dsdf.iloc[train_index][y_index]
+
+        onedf = fullclassify(onedf, X_train_for_all_pts, y_train_for_all_pts, X_test, y_test, len(X_train_for_all_pts.values), f)
+        full_df = full_df.append(onedf)
+
 
         table2 = Table(10)
         nprows = X_train.values
@@ -642,9 +683,14 @@ def clusterandclassify(table, filename):
             table2 + l
 
         enough = int(math.sqrt(len(table2.rows)))
-        root = Table.clusters(table2.rows, table, enough)
+        root = Table.clusters(table2.rows, table2, enough)
 
-        treatments = [1,2,3,5,enough]
+        counter = 0
+        for leaf in sorted(nodes(root), key=rowSize):
+            counter += 1
+        stopping = int(len(table2.rows)/counter)
+
+        treatments = [1,2,3,5]
         for samples in treatments:
             if samples == 1:
                 MedianTable = leafmedians(root)
@@ -668,12 +714,12 @@ def clusterandclassify(table, filename):
     final_columns.append("fold")
     final_columns.append("run_num")
     output_df = full_df[final_columns]
-    output_df.to_csv("./output/newDS/" + filename + "_LR.csv", index=False)
+    output_df.to_csv("./output/redo2/" + filename + "_re26RF.csv", index=False)
 
 
 def main():
     random.seed(10039)
-    datasets = ["defaultcredit.csv", "bankmarketing.csv"]
+    datasets = ["adultscensusincome.csv", "bankmarketing.csv", "defaultcredit.csv", "diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
     pbar = tqdm(datasets)
 
     for dataset in pbar:
