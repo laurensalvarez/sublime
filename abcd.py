@@ -79,7 +79,7 @@ if __name__ == "__main__":
   for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
         filename = dataset[:-4]
-        filepath = r'./output/midone/' + filename + "_RF.csv"
+        filepath = r'./output/mode/' + filename + "_RF.csv"
         abcd = Abcd(db=filename,rx='jiggle')
 
         df = pd.read_csv(filepath)

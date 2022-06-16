@@ -115,6 +115,8 @@ class Num(Col):
         self.hi = -big  # -float('inf')
         self.vals = []
         self.uid = uid
+        self.count = defaultdict(int)
+        self.most = 0
         self.median = 0
         self.coltype = 1
         if data != None:
@@ -125,6 +127,10 @@ class Num(Col):
         # add the column; calculate the new lo/hi, get the sd using the 'chasing the mean'
         self.n += 1
         self.vals.append(v)  # add value to a list
+        self.count[v] += 1  # add value to the dictionary with count +1
+        tmp = self.count[v]
+        if tmp > self.most:  # check which is the most seen; if it's the most then assign and update mode
+            self.most, self.mode = tmp, v  # a,b = b,a
         try:
             if v < self.lo:  # if the val is < the lowest; reassign
                 self.lo = v
@@ -493,7 +499,8 @@ def rowSize(t): return len(t.leftTable.rows)  # gets the size of the rows
 
 def leafmedians(root, how=None):  # for all of the leaves from smallest to largest print len of rows & median
     MedianTable = Table(222)
-    MedianTable.create_cols(root.header)
+    header = root.header
+    MedianTable + header
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
         mid = [col.mid() for col in t.cols]
@@ -502,10 +509,10 @@ def leafmedians(root, how=None):  # for all of the leaves from smallest to large
     MedianTable.encode_lines()
     return MedianTable
 
-def getLeafData(root, samples_per_leaf,
-                how=None):  # for all of the leaves from smallest to largest print len of rows & median
+def getLeafData(root, samples_per_leaf, how=None):  # for all of the leaves from smallest to largest print len of rows & median
     EDT = Table(samples_per_leaf)
-    EDT.create_cols(root.header)
+    header = root.header
+    EDT + header
     counter = 0
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
@@ -516,24 +523,45 @@ def getLeafData(root, samples_per_leaf,
     EDT.encode_lines()
     return EDT
 
-def getLeafMedClass(root, samples_per_leaf,
-                how=None):  # for all of the leaves from smallest to largest get x samples per leaf with median class label
+def getLeafMedClass(root, samples_per_leaf,how=None):  # for all of the leaves from smallest to largest get x samples per leaf with median class label
     EDT = Table(samples_per_leaf)
-    EDT.create_cols(root.header)
+    header = root.header
+    EDT + header
     counter = 0
+    newy = []
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
-        mid = col.mid() for col in t.y
+        mid =  t.y[-1].mid()
+        leafys = [mid for _ in range(samples_per_leaf)]
+        newy.extend(leafys)
         for i in range(samples_per_leaf):
             randomrow = random.choice(t.rows)
             EDT + randomrow
-            counter += 1
 
     numrows = len(EDT.rows)
     newy = [mid for r in numrows]
     EDT.y = newy
     EDT.encode_lines()
     return EDT
+
+    def getLeafModes(root, samples_per_leaf,how=None):  # for all of the leaves from smallest to largest get x samples per leaf with median class label
+        EDT = Table(samples_per_leaf)
+        header = root.header
+        EDT + header
+        newy = []
+        for leaf in sorted(nodes(root), key=how or rowSize):
+            t = leaf.leftTable
+            mid =  t.y[-1].mode
+            print("EDT", mid)
+            leafys = [mid for _ in range(samples_per_leaf)]
+            newy.extend(leafys)
+            for i in range(samples_per_leaf):
+                randomrow = random.choice(t.rows)
+                EDT + randomrow
+        EDT.encode_lines()
+        print("EDT", EDT.y[-1].vals)
+
+        return EDT
 
     def dump(self, f):
         # DFS
@@ -586,8 +614,8 @@ def getXY(table):
     return X,y
 
 
-def classify(table, df, X_test, y_test, samples, f):
-    i = 1
+def classify(table, df, X_test, y_test, samples, total_pts, f):
+    # i = 1
     full = []
     X_train, y_train = getXY(table)
 
@@ -606,15 +634,44 @@ def classify(table, df, X_test, y_test, samples, f):
         full[j] = np.append(full[j],y_test_list[j])
         full[j] = np.append(full[j],y_pred_list[j])
         full[j] = np.append(full[j], samples)
+        full[j] = np.append(full[j], total_pts)
         full[j] = np.append(full[j], f)
-        full[j] = np.append(full[j], i)
+        # full[j] = np.append(full[j], i)
     for row in full:
         a_series = pd.Series(row, index=df.columns)
         df = df.append(a_series, ignore_index=True)
     return df
 
+def fullclassify(df, X_train, y_train, X_test, y_test, samples, total_pts, f):
+    # i = 1
+    full = []
+    # X_train, y_train = getXY(table)
 
-# ------------------------------------------------------------------------------
+    #LR RF SVC
+    # clf = LogisticRegression(random_state=0)
+    clf = RandomForestClassifier(random_state=0)
+    # clf = SVC(kernel='linear')
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+
+
+    y_pred_list = y_pred.tolist()
+    y_test_list = y_test.tolist()
+    for x in list(X_test.values):
+        full.append(deepcopy(x))
+    for j in range(len(y_test_list)):
+        full[j] = np.append(full[j],y_test_list[j])
+        full[j] = np.append(full[j],y_pred_list[j])
+        full[j] = np.append(full[j], samples)
+        full[j] = np.append(full[j], total_pts)
+        full[j] = np.append(full[j], f)
+        # full[j] = np.append(full[j], i)
+    for row in full:
+        a_series = pd.Series(row, index=df.columns)
+        df = df.append(a_series, ignore_index=True)
+    return df
+
+# -----------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
 
@@ -644,32 +701,29 @@ def clusterandclassify(table, filename):
     trows = deepcopy(table.encodedrows)
     dsdf = pd.DataFrame(data= trows, columns=tcolumns)
 
-    y = dsdf[y_index].tolist()
-    # yfrequency = collections.Counter(y)
-    # print("full y frequency:", yfrequency)
-    # dsdf = dsdf.drop(columns = [y_index])
-
     tcols = deepcopy(table.header)
     tcols.append("predicted")
     tcols.append("samples")
+    tcols.append("total_pts")
     tcols.append("fold")
-    tcols.append("run_num")
+    # tcols.append("run_num")
     sampledf = pd.DataFrame(columns=tcols)
     full_df = pd.DataFrame(columns=tcols)
-
+    onedf = pd.DataFrame(columns=tcols)
     rkf = RepeatedKFold(n_splits=5, n_repeats=5, random_state=222)
-    # print(y)
-    # sys.exit()
 
     f = 1 #do we want to count the folds??
-    for train_index, test_index in rkf.split(dsdf,y):
-        X_train = dsdf.iloc[train_index].drop(columns = [y_index])
+    for train_index, test_index in rkf.split(dsdf):
+        X_train = dsdf.iloc[train_index]
         X_test = dsdf.iloc[test_index].drop(columns = [y_index])
-        y_train = dsdf.iloc[train_index][y_index]
         y_test = dsdf.iloc[test_index][y_index]
 
-        # ytrainfrequency = collections.Counter(y_train)
-        # print("y_train frequency:", ytrainfrequency)
+        X_train_for_all_pts = dsdf.iloc[train_index].drop(columns = [y_index])
+        y_train_for_all_pts = dsdf.iloc[train_index][y_index]
+
+        num_rows = len(X_train_for_all_pts.values)
+        onedf = fullclassify(onedf, X_train_for_all_pts, y_train_for_all_pts, X_test, y_test, num_rows, num_rows, f)
+        full_df = full_df.append(onedf)
 
         table2 = Table(10)
         nprows = X_train.values
@@ -679,34 +733,32 @@ def clusterandclassify(table, filename):
             table2 + l
 
         enough = int(math.sqrt(len(table2.rows)))
-        root = Table.clusters(table2.rows, table, enough)
+        root = Table.clusters(table2.rows, table2, enough)
 
-        treatments = [1,14,enough]
+        treatments = [1,2,3,5]
         for samples in treatments:
             if samples == 1:
                 MedianTable = leafmedians(root)
-                sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, f)
+                sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, len(MedianTable.rows), f)
             else:
-                EDT = getLeafMedClass(root, samples) #get x random point(s) from leaf clusters with median class label
-                sampledf = classify(EDT, sampledf, X_test, y_test, samples, f)
+                EDT = getLeafData(root, samples) #get x random point(s) from leaf clusters with median class label
+                sampledf = classify(EDT, sampledf, X_test, y_test, samples, len(EDT.rows), f)
             full_df = full_df.append(sampledf)
         print("f:", f)
         f += 1
 
-    # print("full_df head:", full_df.head)
-        # final_df2 = pd.concat([final_df2, final_df], ignore_index=False)
-    final_columns = []
-    for col in table.protected:
-        final_columns.append(col.name)
-    for col in table.klass:
-        final_columns.append(col.name)
-    final_columns.append("predicted")
-    final_columns.append("samples")
-    final_columns.append("fold")
-    final_columns.append("run_num")
-    output_df = full_df[final_columns]
-    output_df.to_csv("./output/6/" + filename + "_14RF.csv", index=False)
-
+    # final_columns = []
+    # for col in table.protected:
+    #     final_columns.append(col.name)
+    # for col in table.klass:
+    #     final_columns.append(col.name)
+    # final_columns.append("predicted")
+    # final_columns.append("samples")
+    # final_columns.append("total_pts")
+    # final_columns.append("fold")
+    # # final_columns.append("run_num")
+    # output_df = full_df[final_columns]
+    # output_df.to_csv("./output/one/" + filename + "_RF.csv", index=False)
 
 def main():
     random.seed(10039)

@@ -515,6 +515,23 @@ def getLeafData(root, samples_per_leaf,how=None):  # for all of the leaves from 
     EDT.encode_lines()
     return EDT
 
+def getLeafMedClass(root, samples_per_leaf, how=None):  # for all of the leaves from smallest to largest get x samples per leaf with median class label
+    EDT = Table(samples_per_leaf)
+    EDT.create_cols(root.header)
+    counter = 0
+    for leaf in sorted(nodes(root), key=how or rowSize):
+        t = leaf.leftTable
+        mid = [col.mid() for col in t.y]
+        for i in range(samples_per_leaf):
+            randomrow = random.choice(t.rows)
+            EDT + randomrow
+            counter += 1
+
+    numrows = len(EDT.rows)
+    newy = [mid for r in numrows]
+    EDT.y = newy
+    EDT.encode_lines()
+    return EDT
     def dump(self, f):
         # DFS
         if self.leaf:
@@ -576,17 +593,17 @@ def classify(table, df, X_test, y_test, samples, total_pts, f):
     clf = RandomForestClassifier(random_state=0)
     # clf = SVC(kernel='linear')
     clf.fit(X_train, y_train)
-    probs = clf.predict_proba(X_test)
+    # probs = clf.predict_proba(X_test)
     # classes_ = clf.classes_
     # print("classes", classes_)
-    class0 = map(lambda x: x[0], probs)
-    class1 = map(lambda x: x[1], probs)
-    class0_mean = statistics.mean(class0)
-    class1_mean = statistics.mean(class1)
-    if class0_mean > class1_mean:
-        print ("predicting for class 0")
-    elif class1_mean > class0_mean:
-        print ("predicting for class 1")
+    # class0 = map(lambda x: x[0], probs)
+    # class1 = map(lambda x: x[1], probs)
+    # class0_mean = statistics.mean(class0)
+    # class1_mean = statistics.mean(class1)
+    # if class0_mean > class1_mean:
+    #     print ("predicting for class 0")
+    # elif class1_mean > class0_mean:
+    #     print ("predicting for class 1")
     y_pred = clf.predict(X_test)
 
     y_pred_list = y_pred.tolist()
@@ -615,17 +632,17 @@ def fullclassify(df, X_train, y_train, X_test, y_test, samples, total_pts, f):
     clf = RandomForestClassifier(random_state=0)
     # clf = SVC(kernel='linear')
     clf.fit(X_train, y_train)
-    probs = clf.predict_proba(X_test)
+    # probs = clf.predict_proba(X_test)
     # classes_ = clf.classes_
     # print("classes", classes_)
-    class0 = map(lambda x: x[0], probs)
-    class1 = map(lambda x: x[1], probs)
-    class0_mean = statistics.mean(class0)
-    class1_mean = statistics.mean(class1)
-    if class0_mean > class1_mean:
-        print ("predicting for class 0")
-    elif class1_mean > class0_mean:
-        print ("predicting for class 1")
+    # class0 = map(lambda x: x[0], probs)
+    # class1 = map(lambda x: x[1], probs)
+    # class0_mean = statistics.mean(class0)
+    # class1_mean = statistics.mean(class1)
+    # if class0_mean > class1_mean:
+    #     print ("predicting for class 0")
+    # elif class1_mean > class0_mean:
+    #     print ("predicting for class 1")
 
     y_pred = clf.predict(X_test)
 

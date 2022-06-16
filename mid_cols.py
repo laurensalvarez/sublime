@@ -114,6 +114,8 @@ class Num(Col):
         self.hi = -big  # -float('inf')
         self.vals = []
         self.uid = uid
+        self.count = defaultdict(int)
+        self.most = 0
         self.median = 0
         self.coltype = 1
         if data != None:
@@ -124,6 +126,10 @@ class Num(Col):
         # add the column; calculate the new lo/hi, get the sd using the 'chasing the mean'
         self.n += 1
         self.vals.append(v)  # add value to a list
+        self.count[v] += 1  # add value to the dictionary with count +1
+        tmp = self.count[v]
+        if tmp > self.most:  # check which is the most seen; if it's the most then assign and update mode
+            self.most, self.mode = tmp, v  # a,b = b,a
         try:
             if v < self.lo:  # if the val is < the lowest; reassign
                 self.lo = v
@@ -267,8 +273,7 @@ class Table:
         for val in line:
             val = self.compiler(val)  # compile the val datatype
 
-            if val[0] == ":" or val[
-                0] == "?":  # do we skip? if we skip then it doesn't matter what we do? bc it'll never be populated?
+            if val[0] == ":" or val[0] == "?":  # do we skip? if we skip then it doesn't matter what we do? bc it'll never be populated?
                 if val[0].isupper():
                     self.skip.append(Num(''.join(c for c in val),
                                          index))  # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
@@ -521,8 +526,8 @@ def getLeafData(root, samples_per_leaf,how=None):  # for all of the leaves from 
 def getLeafMedClass(root, samples_per_leaf,how=None):  # for all of the leaves from smallest to largest get x samples per leaf with median class label
     EDT = Table(samples_per_leaf)
     header = root.header
-    # EDT.create_cols(root.header)
     EDT + header
+    counter = 0
     newy = []
     for leaf in sorted(nodes(root), key=how or rowSize):
         t = leaf.leftTable
@@ -532,7 +537,31 @@ def getLeafMedClass(root, samples_per_leaf,how=None):  # for all of the leaves f
         for i in range(samples_per_leaf):
             randomrow = random.choice(t.rows)
             EDT + randomrow
+    # print("new EDT y vals (all median):", newy)
+    EDT.y[-1].vals = newy
     EDT.encode_lines()
+    return EDT
+
+def getLeafModes(root, samples_per_leaf,how=None):  # for all of the leaves from smallest to largest get x samples per leaf with median class label
+    EDT = Table(samples_per_leaf)
+    header = root.header
+    EDT + header
+    counter = 0
+    newy = []
+    for leaf in sorted(nodes(root), key=how or rowSize):
+        t = leaf.leftTable
+        mode =  t.y[-1].mode
+        leafys = [mode for _ in range(samples_per_leaf)]
+        newy.extend(leafys)
+        # print("new EDT y vals per cluster (all mode):", leafys)
+        for i in range(samples_per_leaf):
+            randomrow = random.choice(t.rows)
+            EDT + randomrow
+
+    # print("new EDT y vals (mode):", newy)
+    EDT.y[-1].vals = newy
+    EDT.encode_lines()
+
     return EDT
 
     def dump(self, f):
@@ -613,7 +642,6 @@ def classify(table, df, X_test, y_test, samples, total_pts, f):
         a_series = pd.Series(row, index=df.columns)
         df = df.append(a_series, ignore_index=True)
     return df
-
 
 def fullclassify(df, X_train, y_train, X_test, y_test, samples, total_pts, f):
     # i = 1
@@ -715,14 +743,12 @@ def clusterandclassify(table, filename):
 
         treatments = [1,2,3,5]
         for samples in treatments:
-            # print("samples:", samples)
             if samples == 1:
                 MedianTable = leafmedians(root)
                 sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, len(MedianTable.rows), f)
             else:
-                EDT = getLeafMedClass(root, samples) #get x random point(s) from leaf clusters with median class label
+                EDT = getLeafModes(root, samples) #get x random point(s) from leaf clusters with median class label
                 sampledf = classify(EDT, sampledf, X_test, y_test, samples, len(EDT.rows), f)
-
             full_df = full_df.append(sampledf)
         print("f:", f)
         f += 1
@@ -738,7 +764,7 @@ def clusterandclassify(table, filename):
     final_columns.append("fold")
     # final_columns.append("run_num")
     output_df = full_df[final_columns]
-    output_df.to_csv("./output/midone/" + filename + "_RF.csv", index=False)
+    output_df.to_csv("./output/mode/" + filename + "_RF.csv", index=False)
 
 
 def main():

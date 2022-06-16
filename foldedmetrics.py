@@ -6,7 +6,7 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix,classification_report
-from measure import measure_final_score,calculate_recall,calculate_precision,calculate_accuracy
+from class0measure import measure_final_score,calculate_recall,calculate_precision,calculate_accuracy
 from foldedcolumns import Table, Col, Sym, Num
 
 
@@ -135,7 +135,7 @@ def main():
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        filepath = r'./output/midone/' + filename + "_RF.csv"
+        filepath = r'./output/mode/' + filename + "_RF.csv"
         # print(filepath)
         # predlines = Table.readfile(r'./output/fold/' + filename + "_folded_RF.csv")
 
@@ -219,7 +219,7 @@ def main():
 
         fulldf = pd.DataFrame(rows, columns = ['recall+', 'precision+', 'accuracy+', 'F1_Score+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-', 'feature', 'sample_size', 'total_pts', 'fold'])
 
-        fulldf.to_csv("./metrics/midone/" + filename + "_RF_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/mode/" + filename + "_RF_metrics.csv", index=False)
 
 
 
