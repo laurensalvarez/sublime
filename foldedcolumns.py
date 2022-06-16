@@ -576,6 +576,17 @@ def classify(table, df, X_test, y_test, samples, total_pts, f):
     clf = RandomForestClassifier(random_state=0)
     # clf = SVC(kernel='linear')
     clf.fit(X_train, y_train)
+    probs = clf.predict_proba(X_test)
+    # classes_ = clf.classes_
+    # print("classes", classes_)
+    class0 = map(lambda x: x[0], probs)
+    class1 = map(lambda x: x[1], probs)
+    class0_mean = statistics.mean(class0)
+    class1_mean = statistics.mean(class1)
+    if class0_mean > class1_mean:
+        print ("predicting for class 0")
+    elif class1_mean > class0_mean:
+        print ("predicting for class 1")
     y_pred = clf.predict(X_test)
 
     y_pred_list = y_pred.tolist()
@@ -604,7 +615,20 @@ def fullclassify(df, X_train, y_train, X_test, y_test, samples, total_pts, f):
     clf = RandomForestClassifier(random_state=0)
     # clf = SVC(kernel='linear')
     clf.fit(X_train, y_train)
+    probs = clf.predict_proba(X_test)
+    # classes_ = clf.classes_
+    # print("classes", classes_)
+    class0 = map(lambda x: x[0], probs)
+    class1 = map(lambda x: x[1], probs)
+    class0_mean = statistics.mean(class0)
+    class1_mean = statistics.mean(class1)
+    if class0_mean > class1_mean:
+        print ("predicting for class 0")
+    elif class1_mean > class0_mean:
+        print ("predicting for class 1")
+
     y_pred = clf.predict(X_test)
+
 
     y_pred_list = y_pred.tolist()
     y_test_list = y_test.tolist()
@@ -704,19 +728,19 @@ def clusterandclassify(table, filename):
             full_df = full_df.append(sampledf)
         print("f:", f)
         f += 1
-
-    final_columns = []
-    for col in table.protected:
-        final_columns.append(col.name)
-    for col in table.klass:
-        final_columns.append(col.name)
-    final_columns.append("predicted")
-    final_columns.append("samples")
-    final_columns.append("total_pts")
-    final_columns.append("fold")
-    # final_columns.append("run_num")
-    output_df = full_df[final_columns]
-    output_df.to_csv("./output/one/" + filename + "_RF.csv", index=False)
+    #
+    # final_columns = []
+    # for col in table.protected:
+    #     final_columns.append(col.name)
+    # for col in table.klass:
+    #     final_columns.append(col.name)
+    # final_columns.append("predicted")
+    # final_columns.append("samples")
+    # final_columns.append("total_pts")
+    # final_columns.append("fold")
+    # # final_columns.append("run_num")
+    # output_df = full_df[final_columns]
+    # output_df.to_csv("./output/one/" + filename + "_RF.csv", index=False)
 
 
 def main():

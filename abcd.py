@@ -79,7 +79,7 @@ if __name__ == "__main__":
   for dataset in pbar:
         pbar.set_description("Processing %s" % dataset)
         filename = dataset[:-4]
-        filepath = r'./output/mid2/' + filename + "_mid2RF.csv"
+        filepath = r'./output/midone/' + filename + "_RF.csv"
         abcd = Abcd(db=filename,rx='jiggle')
 
         df = pd.read_csv(filepath)
@@ -90,8 +90,8 @@ if __name__ == "__main__":
 
         test = df["predicted"].tolist()
 
-        print ("test", len(test))
-        print("train", len(train))
+        # print ("test", len(test))
+        # print("train", len(train))
 
         for actual, predicted in zip(train,test):
             abcd.tell(actual,predicted)
