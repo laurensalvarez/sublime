@@ -262,8 +262,7 @@ class Table:
         for val in line:
             val = self.compiler(val)  # compile the val datatype
 
-            if val[0] == ":" or val[
-                0] == "?":  # do we skip? if we skip then it doesn't matter what we do? bc it'll never be populated?
+            if val[0] == ":" or val[0] == "?":  # do we skip? if we skip then it doesn't matter what we do? bc it'll never be populated?
                 if val[0].isupper():
                     self.skip.append(Num(''.join(c for c in val),
                                          index))  # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string

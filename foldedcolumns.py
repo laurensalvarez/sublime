@@ -267,8 +267,7 @@ class Table:
         for val in line:
             val = self.compiler(val)  # compile the val datatype
 
-            if val[0] == ":" or val[
-                0] == "?":  # do we skip? if we skip then it doesn't matter what we do? bc it'll never be populated?
+            if val[0] == ":" or val[0] == "?":  # do we skip? if we skip then it doesn't matter what we do? bc it'll never be populated?
                 if val[0].isupper():
                     self.skip.append(Num(''.join(c for c in val),
                                          index))  # take all the items in val as long as it's not ?/: ;join()takes all items in an iterable and joins them as a string
@@ -567,8 +566,8 @@ def getXY(table):
     return X,y
 
 
-def classify(table, df, X_test, y_test, samples, f):
-    i = 1
+def classify(table, df, X_test, y_test, samples, total_pts, f):
+    # i = 1
     full = []
     X_train, y_train = getXY(table)
 
@@ -587,15 +586,16 @@ def classify(table, df, X_test, y_test, samples, f):
         full[j] = np.append(full[j],y_test_list[j])
         full[j] = np.append(full[j],y_pred_list[j])
         full[j] = np.append(full[j], samples)
+        full[j] = np.append(full[j], total_pts)
         full[j] = np.append(full[j], f)
-        full[j] = np.append(full[j], i)
+        # full[j] = np.append(full[j], i)
     for row in full:
         a_series = pd.Series(row, index=df.columns)
         df = df.append(a_series, ignore_index=True)
     return df
 
-def fullclassify(df, X_train, y_train, X_test, y_test, samples, f):
-    i = 1
+def fullclassify(df, X_train, y_train, X_test, y_test, samples, total_pts, f):
+    # i = 1
     full = []
     # X_train, y_train = getXY(table)
 
@@ -614,8 +614,9 @@ def fullclassify(df, X_train, y_train, X_test, y_test, samples, f):
         full[j] = np.append(full[j],y_test_list[j])
         full[j] = np.append(full[j],y_pred_list[j])
         full[j] = np.append(full[j], samples)
+        full[j] = np.append(full[j], total_pts)
         full[j] = np.append(full[j], f)
-        full[j] = np.append(full[j], i)
+        # full[j] = np.append(full[j], i)
     for row in full:
         a_series = pd.Series(row, index=df.columns)
         df = df.append(a_series, ignore_index=True)
@@ -654,8 +655,9 @@ def clusterandclassify(table, filename):
     tcols = deepcopy(table.header)
     tcols.append("predicted")
     tcols.append("samples")
+    tcols.append("total_pts")
     tcols.append("fold")
-    tcols.append("run_num")
+    # tcols.append("run_num")
     sampledf = pd.DataFrame(columns=tcols)
     full_df = pd.DataFrame(columns=tcols)
     onedf = pd.DataFrame(columns=tcols)
@@ -671,7 +673,8 @@ def clusterandclassify(table, filename):
         X_train_for_all_pts = dsdf.iloc[train_index].drop(columns = [y_index])
         y_train_for_all_pts = dsdf.iloc[train_index][y_index]
 
-        onedf = fullclassify(onedf, X_train_for_all_pts, y_train_for_all_pts, X_test, y_test, len(X_train_for_all_pts.values), f)
+        num_rows = len(X_train_for_all_pts.values)
+        onedf = fullclassify(onedf, X_train_for_all_pts, y_train_for_all_pts, X_test, y_test, num_rows, num_rows, f)
         full_df = full_df.append(onedf)
 
 
@@ -694,16 +697,14 @@ def clusterandclassify(table, filename):
         for samples in treatments:
             if samples == 1:
                 MedianTable = leafmedians(root)
-                sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, f)
+                sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, len(MedianTable.rows), f)
             else:
                 EDT = getLeafData(root, samples) #get x random point(s) from leaf clusters
-                sampledf = classify(EDT, sampledf, X_test, y_test, samples, f)
+                sampledf = classify(EDT, sampledf, X_test, y_test, samples, len(EDT.rows), f)
             full_df = full_df.append(sampledf)
         print("f:", f)
         f += 1
 
-    # print("full_df head:", full_df.head)
-        # final_df2 = pd.concat([final_df2, final_df], ignore_index=False)
     final_columns = []
     for col in table.protected:
         final_columns.append(col.name)
@@ -711,10 +712,11 @@ def clusterandclassify(table, filename):
         final_columns.append(col.name)
     final_columns.append("predicted")
     final_columns.append("samples")
+    final_columns.append("total_pts")
     final_columns.append("fold")
-    final_columns.append("run_num")
+    # final_columns.append("run_num")
     output_df = full_df[final_columns]
-    output_df.to_csv("./output/redo2/" + filename + "_re26RF.csv", index=False)
+    output_df.to_csv("./output/one/" + filename + "_RF.csv", index=False)
 
 
 def main():

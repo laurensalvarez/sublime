@@ -16,7 +16,7 @@ from foldedcolumns import Table, Col, Sym, Num
 ###############################################
 
 # normal matrix
-def getMetrics(test_df, y_true, y_pred, biased_col, samples, fold, run_num):
+def getMetrics(test_df, y_true, y_pred, biased_col, samples, total_pts, fold):
     # print("samples", samples, "run_num", run_num)
     # print("y_true:", y_true,"\n", "y_pred:", y_pred, "\n")
     # cm = confusion_matrix(y_true,y_pred,labels=[0, 1])
@@ -41,7 +41,7 @@ def getMetrics(test_df, y_true, y_pred, biased_col, samples, fold, run_num):
     # print("EOD :" + biased_col , EOD)
     # print("SPD:", SPD)
 
-    return [recall, precision, accuracy, F1, AOD, EOD, SPD, FA0, FA1, biased_col, samples, fold, run_num]
+    return [recall, precision, accuracy, F1, AOD, EOD, SPD, FA0, FA1, biased_col, samples, total_pts, fold]
 
 
 def makeBinary(preddf, dataset):
@@ -135,7 +135,7 @@ def main():
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        filepath = r'./output/redo2/' + filename + "_re26RF.csv"
+        filepath = r'./output/midone/' + filename + "_RF.csv"
         # print(filepath)
         # predlines = Table.readfile(r'./output/fold/' + filename + "_folded_RF.csv")
 
@@ -160,18 +160,21 @@ def main():
         # sorting and removal of duplicates
         samples = copy.deepcopy(bintdf["samples"].tolist())
         sortedsamples = sorted(set(samples), key = lambda ele: samples.count(ele))
+        sortedsamples = sorted(sortedsamples)
 
 
         all_metrics = {}
         rows = []
-        # run_num = 1
+        print("sorted samples:", sortedsamples)
+        treatments = sortedsamples[:4]
+        full_set = sortedsamples[4:]
 
-        for s in sortedsamples:
+        for s in treatments:
             print("Metrics for", s, "samples: \n")
             dfs = copy.deepcopy(bintdf)
             dfs.drop(dfs.loc[dfs['samples']!= s].index, inplace=True)
             list = []
-            for f in range(1,27):
+            for f in range(1,26):
 
                 dfr = copy.deepcopy(dfs)
                 dfr.drop(dfs.loc[dfs['fold']!= f].index, inplace=True)
@@ -181,10 +184,30 @@ def main():
                     y_true = dfr["!Probability"]
                 y_pred = dfr["predicted"]
                 # print(dfr)
-                # rnum = dfs["run_num"]
-                list.insert(f, sampleMetrics(dfr, y_true, y_pred, biased_cols, s, f, 1))
+                tp = dfs["total_pts"].tolist()
+                list.insert(f, sampleMetrics(dfr, y_true, y_pred, biased_cols, s, tp[0], f))
             all_metrics[s] = list
             # print("all_metrics:", all_metrics)
+        smaller = full_set[0]
+        bigger = full_set[1]
+        # print("fullset:", full_set)
+
+        print("Metrics for", smaller, "and", bigger, "samples: \n")
+        dfs2 = copy.deepcopy(bintdf)
+        dfs2.drop(dfs2.loc[dfs2['samples'] < smaller].index, inplace=True)
+        list2 = []
+        for f in range(1,26):
+            dfr2 = copy.deepcopy(dfs2)
+            dfr2.drop(dfs2.loc[dfs2['fold']!= f].index, inplace=True)
+            if '!probability' in dfr2.columns:
+                y_true = dfr2["!probability"]
+            else:
+                y_true = dfr2["!Probability"]
+            y_pred = dfr2["predicted"]
+            # print(dfr)
+            tp = dfs2["total_pts"].tolist()
+            list2.insert(f, sampleMetrics(dfr2, y_true, y_pred, biased_cols, smaller, tp[0], f))
+        all_metrics[smaller] = list2
 
         for key, v in all_metrics.items():
             # print("data dict: " , key, "v:", v)
@@ -194,9 +217,9 @@ def main():
                     # print(tmp)
                     rows.append(tmp)
 
-        fulldf = pd.DataFrame(rows, columns = ['recall+', 'precision+', 'accuracy+', 'F1_Score+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-', 'feature', 'sample_size', 'fold', 'run_num'])
+        fulldf = pd.DataFrame(rows, columns = ['recall+', 'precision+', 'accuracy+', 'F1_Score+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-', 'feature', 'sample_size', 'total_pts', 'fold'])
 
-        fulldf.to_csv("./metrics/redo2/" + filename + "_redo2RF_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/midone/" + filename + "_RF_metrics.csv", index=False)
 
 
 
