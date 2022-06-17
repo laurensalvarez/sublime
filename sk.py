@@ -354,13 +354,16 @@ if __name__ == "__main__":
   random.seed(1)
   datasets = ["adultscensusincome.csv", "bankmarketing.csv", "defaultcredit.csv", "diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
   metrics = ['recall+', 'prec+', 'acc+', 'F1+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-']
+  n = str(5)
+  print("\n" + "Enough_multiplier = " + n)
+  print('_' * 50)
   pbar = tqdm(datasets)
   for dataset in pbar:
       pbar.set_description("Processing %s" % dataset)
       filename = dataset[:-4]
       for m in metrics:
           print("\n" + filename +"-" + m + "\n"  )
-          Rx.fileIn("./sk_data/mode/" + filename + "_RF_" + m +"_.csv")
+          Rx.fileIn("./sk_data/enough_mode/" + filename + "_" + n + "_" + m +"_.csv")
 
 
 

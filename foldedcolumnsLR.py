@@ -544,24 +544,23 @@ def getLeafMedClass(root, samples_per_leaf,how=None):  # for all of the leaves f
     EDT.encode_lines()
     return EDT
 
-    def getLeafModes(root, samples_per_leaf,how=None):  # for all of the leaves from smallest to largest get x samples per leaf with median class label
-        EDT = Table(samples_per_leaf)
-        header = root.header
-        EDT + header
-        newy = []
-        for leaf in sorted(nodes(root), key=how or rowSize):
-            t = leaf.leftTable
-            mid =  t.y[-1].mode
-            print("EDT", mid)
-            leafys = [mid for _ in range(samples_per_leaf)]
-            newy.extend(leafys)
-            for i in range(samples_per_leaf):
-                randomrow = random.choice(t.rows)
-                EDT + randomrow
-        EDT.encode_lines()
-        print("EDT", EDT.y[-1].vals)
-
-        return EDT
+def getLeafModes(root, samples_per_leaf,how=None):  # for all of the leaves from smallest to largest get x samples per leaf with median class label
+    EDT = Table(samples_per_leaf)
+    header = root.header
+    EDT + header
+    counter = 0
+    newy = []
+    for leaf in sorted(nodes(root), key=how or rowSize):
+        t = leaf.leftTable
+        mode =  t.y[-1].mode
+        leafys = [mode for _ in range(samples_per_leaf)]
+        newy.extend(leafys)
+        for i in range(samples_per_leaf):
+            randomrow = random.choice(t.rows)
+            EDT + randomrow
+    EDT.y[-1].vals = newy
+    EDT.encode_lines()
+    return EDT
 
     def dump(self, f):
         # DFS
@@ -614,7 +613,7 @@ def getXY(table):
     return X,y
 
 
-def classify(table, df, X_test, y_test, samples, total_pts, f):
+def classify(table, df, X_test, y_test, samples, total_pts, f, enough_multiplier):
     # i = 1
     full = []
     X_train, y_train = getXY(table)
@@ -636,13 +635,14 @@ def classify(table, df, X_test, y_test, samples, total_pts, f):
         full[j] = np.append(full[j], samples)
         full[j] = np.append(full[j], total_pts)
         full[j] = np.append(full[j], f)
+        full[j] = np.append(full[j], enough_multiplier)
         # full[j] = np.append(full[j], i)
     for row in full:
         a_series = pd.Series(row, index=df.columns)
         df = df.append(a_series, ignore_index=True)
     return df
 
-def fullclassify(df, X_train, y_train, X_test, y_test, samples, total_pts, f):
+def fullclassify(df, X_train, y_train, X_test, y_test, samples, total_pts, f, enough_multiplier):
     # i = 1
     full = []
     # X_train, y_train = getXY(table)
@@ -665,6 +665,7 @@ def fullclassify(df, X_train, y_train, X_test, y_test, samples, total_pts, f):
         full[j] = np.append(full[j], samples)
         full[j] = np.append(full[j], total_pts)
         full[j] = np.append(full[j], f)
+        full[j] = np.append(full[j], enough_multiplier)
         # full[j] = np.append(full[j], i)
     for row in full:
         a_series = pd.Series(row, index=df.columns)
@@ -706,6 +707,7 @@ def clusterandclassify(table, filename):
     tcols.append("samples")
     tcols.append("total_pts")
     tcols.append("fold")
+    tcols.append("enough_multiplier")
     # tcols.append("run_num")
     sampledf = pd.DataFrame(columns=tcols)
     full_df = pd.DataFrame(columns=tcols)
@@ -722,7 +724,7 @@ def clusterandclassify(table, filename):
         y_train_for_all_pts = dsdf.iloc[train_index][y_index]
 
         num_rows = len(X_train_for_all_pts.values)
-        onedf = fullclassify(onedf, X_train_for_all_pts, y_train_for_all_pts, X_test, y_test, num_rows, num_rows, f)
+        onedf = fullclassify(onedf, X_train_for_all_pts, y_train_for_all_pts, X_test, y_test, num_rows, num_rows, f, 100)
         full_df = full_df.append(onedf)
 
         table2 = Table(10)
@@ -732,37 +734,40 @@ def clusterandclassify(table, filename):
         for l in nprows:
             table2 + l
 
-        enough = int(math.sqrt(len(table2.rows)))
-        root = Table.clusters(table2.rows, table2, enough)
+        mtreatments = [1,2,3,5]
+        for m in mtreatments:
+            enough = int(m * math.sqrt(len(table2.rows)))
+            root = Table.clusters(table2.rows, table2, enough)
 
-        treatments = [1,2,3,5]
-        for samples in treatments:
-            if samples == 1:
-                MedianTable = leafmedians(root)
-                sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, len(MedianTable.rows), f)
-            else:
-                EDT = getLeafData(root, samples) #get x random point(s) from leaf clusters with median class label
-                sampledf = classify(EDT, sampledf, X_test, y_test, samples, len(EDT.rows), f)
-            full_df = full_df.append(sampledf)
+            treatments = [1,2,3,5]
+            for samples in treatments:
+                if samples == 1:
+                    MedianTable = leafmedians(root)
+                    sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, len(MedianTable.rows), f, m)
+                else:
+                    EDT = getLeafModes(root, samples)
+                    sampledf = classify(EDT, sampledf, X_test, y_test, samples, len(EDT.rows), f, m)
+                full_df = full_df.append(sampledf)
         print("f:", f)
         f += 1
 
-    # final_columns = []
-    # for col in table.protected:
-    #     final_columns.append(col.name)
-    # for col in table.klass:
-    #     final_columns.append(col.name)
-    # final_columns.append("predicted")
-    # final_columns.append("samples")
-    # final_columns.append("total_pts")
-    # final_columns.append("fold")
-    # # final_columns.append("run_num")
-    # output_df = full_df[final_columns]
-    # output_df.to_csv("./output/one/" + filename + "_RF.csv", index=False)
+    final_columns = []
+    for col in table.protected:
+        final_columns.append(col.name)
+    for col in table.klass:
+        final_columns.append(col.name)
+    final_columns.append("predicted")
+    final_columns.append("samples")
+    final_columns.append("total_pts")
+    final_columns.append("fold")
+    final_columns.append("enough_multiplier")
+    # final_columns.append("run_num")
+    output_df = full_df[final_columns]
+    output_df.to_csv("./output/enough_mode/" + filename + "_RF.csv", index=False)
 
 def main():
     random.seed(10039)
-    datasets = ["adultscensusincome.csv", "bankmarketing.csv", "defaultcredit.csv", "diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+    datasets = ["adultscensusincome.csv", "bankmarketing.csv", "diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv", "defaultcredit.csv"]
     pbar = tqdm(datasets)
 
     for dataset in pbar:

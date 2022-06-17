@@ -561,7 +561,6 @@ def getLeafModes(root, samples_per_leaf,how=None):  # for all of the leaves from
     # print("new EDT y vals (mode):", newy)
     EDT.y[-1].vals = newy
     EDT.encode_lines()
-
     return EDT
 
     def dump(self, f):
@@ -764,7 +763,7 @@ def clusterandclassify(table, filename):
     final_columns.append("fold")
     # final_columns.append("run_num")
     output_df = full_df[final_columns]
-    output_df.to_csv("./output/mode/" + filename + "_RF.csv", index=False)
+    output_df.to_csv("./output/enough_mode/" + filename + "_RF.csv", index=False)
 
 
 def main():
