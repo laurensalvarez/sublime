@@ -6,8 +6,8 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix,classification_report
-from class0measure import measure_final_score,calculate_recall,calculate_precision,calculate_accuracy
-from foldedcolumns import Table, Col, Sym, Num
+from measure import measure_final_score,calculate_recall,calculate_precision,calculate_accuracy
+from cols import Table, Col, Sym, Num
 
 
 
@@ -135,7 +135,7 @@ def main():
         pbar.set_description("Processing %s" % dataset)
 
         filename = dataset[:-4]
-        filepath = r'./output/mode/' + filename + "_RF.csv"
+        filepath = r'./output/RAND/' + filename + "_RF.csv"
         # print(filepath)
         # predlines = Table.readfile(r'./output/fold/' + filename + "_folded_RF.csv")
 
@@ -165,12 +165,12 @@ def main():
 
         all_metrics = {}
         rows = []
-        print("sorted samples:", sortedsamples)
+        # print("sorted samples:", sortedsamples)
         treatments = sortedsamples[:4]
         full_set = sortedsamples[4:]
 
         for s in treatments:
-            print("Metrics for", s, "samples: \n")
+            # print("Metrics for", s, "samples: \n")
             dfs = copy.deepcopy(bintdf)
             dfs.drop(dfs.loc[dfs['samples']!= s].index, inplace=True)
             list = []
@@ -192,7 +192,7 @@ def main():
         bigger = full_set[1]
         # print("fullset:", full_set)
 
-        print("Metrics for", smaller, "and", bigger, "samples: \n")
+        # print("Metrics for", smaller, "and", bigger, "samples: \n")
         dfs2 = copy.deepcopy(bintdf)
         dfs2.drop(dfs2.loc[dfs2['samples'] < smaller].index, inplace=True)
         list2 = []
@@ -219,7 +219,7 @@ def main():
 
         fulldf = pd.DataFrame(rows, columns = ['recall+', 'precision+', 'accuracy+', 'F1_Score+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-', 'feature', 'sample_size', 'total_pts', 'fold'])
 
-        fulldf.to_csv("./metrics/mode/" + filename + "_RF_metrics.csv", index=False)
+        fulldf.to_csv("./metrics/RAND_C2/" + filename + "_RF_metrics.csv", index=False)
 
 
 

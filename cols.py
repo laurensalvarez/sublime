@@ -746,7 +746,8 @@ def clusterandclassify(table, filename):
                 MedianTable = leafmedians(root)
                 sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, len(MedianTable.rows), f)
             else:
-                EDT = getLeafModes(root, samples) #get x random point(s) from leaf clusters with median class label
+                EDT = getLeafModes(root, samples) #get x random point(s) from leaf clusters with MODE as label guess
+                # EDT = getLeafData(root,samples) #gets rand points with real label
                 sampledf = classify(EDT, sampledf, X_test, y_test, samples, len(EDT.rows), f)
             full_df = full_df.append(sampledf)
         print("f:", f)
@@ -763,7 +764,7 @@ def clusterandclassify(table, filename):
     final_columns.append("fold")
     # final_columns.append("run_num")
     output_df = full_df[final_columns]
-    output_df.to_csv("./output/enough_mode/" + filename + "_RF.csv", index=False)
+    output_df.to_csv("./output/MODE/" + filename + "_RF.csv", index=False)
 
 
 def main():

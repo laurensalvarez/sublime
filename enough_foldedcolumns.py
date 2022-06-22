@@ -648,8 +648,8 @@ def fullclassify(df, X_train, y_train, X_test, y_test, samples, total_pts, f, en
     # X_train, y_train = getXY(table)
 
     #LR RF SVC
-    # clf = LogisticRegression(random_state=0)
-    clf = RandomForestClassifier(random_state=0)
+    clf = LogisticRegression(random_state=0)
+    # clf = RandomForestClassifier(random_state=0)
     # clf = SVC(kernel='linear')
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
@@ -745,7 +745,8 @@ def clusterandclassify(table, filename):
                     MedianTable = leafmedians(root)
                     sampledf = classify(MedianTable, sampledf, X_test, y_test, samples, len(MedianTable.rows), f, m)
                 else:
-                    EDT = getLeafModes(root, samples)
+                    # EDT = getLeafModes(root, samples)
+                    EDT = getLeafData(root,samples) #gets rand points with real label
                     sampledf = classify(EDT, sampledf, X_test, y_test, samples, len(EDT.rows), f, m)
                 full_df = full_df.append(sampledf)
         print("f:", f)
@@ -763,7 +764,7 @@ def clusterandclassify(table, filename):
     final_columns.append("enough_multiplier")
     # final_columns.append("run_num")
     output_df = full_df[final_columns]
-    output_df.to_csv("./output/enough_mode/" + filename + "_RF.csv", index=False)
+    output_df.to_csv("./output/RAND/" + filename + "_RF.csv", index=False)
 
 def main():
     random.seed(10039)
