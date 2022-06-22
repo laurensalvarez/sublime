@@ -351,21 +351,16 @@ def bsTest(n=1000,mu1=10,sigma1=1,mu2=10.2,sigma2=1):
 from tqdm import tqdm
 
 if __name__ == "__main__":
-  for n in [1,2,3,5]:
-    n = str(n)
-    random.seed(1)
-    datasets = ["adultscensusincome.csv", "bankmarketing.csv", "defaultcredit.csv", "diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
-    metrics = ['recall+', 'prec+', 'acc+', 'F1+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-']
-
-    print("\n" + "Enough_multiplier = " + n)
-    print('_' * 50)
-    pbar = tqdm(datasets)
-    for dataset in pbar:
-        pbar.set_description("Processing %s" % dataset)
-        filename = dataset[:-4]
-        for m in metrics:
-            print("\n" + "LR" +"-" + filename +"-" + m + "\n"  )
-            Rx.fileIn("./sk_data/EM_MODE_CO/" + filename + "_" + n + "_LR_" + m +"_.csv")
+  random.seed(1)
+  datasets = ["adultscensusincome.csv", "bankmarketing.csv", "defaultcredit.csv", "diabetes.csv", "CleanCOMPAS53.csv", "GermanCredit.csv"]
+  metrics = ['recall+', 'prec+', 'acc+', 'F1+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-']
+  pbar = tqdm(datasets)
+  for dataset in pbar:
+    pbar.set_description("Processing %s" % dataset)
+    filename = dataset[:-4]
+    for m in metrics:
+      print("\n" + "RF" +"-" + filename +"-" + m + "\n"  )
+      Rx.fileIn("./sk_data/MODE_C2/" + filename + "_RF_" + m +"_.csv")
 
 
 
