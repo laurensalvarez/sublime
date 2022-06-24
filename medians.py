@@ -44,32 +44,33 @@ if __name__ == "__main__":
     metrics = ['recall+', 'prec+', 'acc+', 'F1+', 'AOD-', 'EOD-', 'SPD-', 'FA0-', 'FA1-']
     pbar = tqdm(datasets)
 
-    columns = metrics.copy()
-    columns.insert(0, "features")
-    columns.insert(0, "dataset")
-    fulldf = pd.DataFrame(columns=columns)
-    datasetdf = pd.DataFrame(columns=columns)
-    datasetsdf = pd.DataFrame(columns=columns)
+    for n in [1,2,3,5]:
+        n = str(n)
+        columns = metrics.copy()
+        columns.insert(0, "features")
+        columns.insert(0, "dataset")
+        fulldf = pd.DataFrame(columns=columns)
+        datasetdf = pd.DataFrame(columns=columns)
+        datasetsdf = pd.DataFrame(columns=columns)
 
+        for dataset in pbar:
+            pbar.set_description("Processing %s" % dataset)
+            filename = dataset[:-4]
+            mediandf = pd.DataFrame(columns=columns)
 
-    for dataset in pbar:
-        pbar.set_description("Processing %s" % dataset)
-        filename = dataset[:-4]
-        mediandf = pd.DataFrame(columns=columns)
+            for m in metrics:
+                print("\n" +"-" + filename +"-" + m + "\n"  )
+                path =  "./sk_data/EM_MODE_C0/" + filename +"_" + n + "_LR_" + m +"_.csv"
+                mediandf = getMedians(path, m, mediandf)
 
-        for m in metrics:
-            print("\n" +"-" + filename +"-" + m + "\n"  )
-            path =  "./sk_data/MODE_C0/" + filename + "_LR_" + m +"_.csv"
-            mediandf = getMedians(path, m, mediandf)
+            multi = len(mediandf.index)
+            namelist = [filename] * multi
+            mediandf["dataset"] = namelist
+            # print(mediandf)
 
-        multi = len(mediandf.index)
-        namelist = [filename] * multi
-        mediandf["dataset"] = namelist
-        # print(mediandf)
-
-        mediandf.to_csv("./medians/MODE_C0/" + filename + "_LR_medians.csv", index = False)
-        datasetdf = pd.concat([datasetdf, mediandf], ignore_index=True)
+            mediandf.to_csv("./medians/EM_MODE_C0/" + n + "/" + filename + "_" + n + "_LR_medians.csv", index = False)
+            datasetdf = pd.concat([datasetdf, mediandf], ignore_index=True)
         # print(datasetdf)
 
-    fulldf = datasetdf[columns]
-    fulldf.to_csv("./medians/MODE_C0/"  + "MODE_C0_LR_medians.csv", index = False)
+        fulldf = datasetdf[columns]
+        fulldf.to_csv("./medians/EM_MODE_C0/"  + n + "_EM_MODE_LR_medians.csv", index = False)

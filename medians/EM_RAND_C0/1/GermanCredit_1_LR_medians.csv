@@ -1,0 +1,6 @@
+dataset,features,recall+,prec+,acc+,F1+,AOD-,EOD-,SPD-,FA0-,FA1-,feature
+GermanCredit,1_sex(,0.0,0.0,0.65,0.0,0.0,0.0,0.0,1.0,1.0,1_sex(
+GermanCredit,2_sex(,0.2,0.62,0.68,0.3,-0.02,0.0,0.05,0.8,0.79,2_sex(
+GermanCredit,3_sex(,0.3,0.67,0.7,0.41,0.04,0.05,0.04,0.7,0.73,3_sex(
+GermanCredit,5_sex(,0.38,0.64,0.71,0.48,0.05,0.09,0.06,0.62,0.68,5_sex(
+GermanCredit,799_sex(,0.48,0.64,0.73,0.55,0.08,0.09,0.08,0.52,0.58,799_sex(
